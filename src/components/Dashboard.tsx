@@ -1,6 +1,7 @@
 import React from 'react';
-import { Plus, FileText, Calendar, Users } from 'lucide-react';
+import { Plus, FileText, Calendar, Users, Send } from 'lucide-react';
 import { ToolboxTalk } from '../types';
+import { storage } from '../utils/storage';
 
 interface DashboardProps {
   talks: ToolboxTalk[];
@@ -13,6 +14,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNewTalk,
   onEditTalk
 }) => {
+  const [outboxCount, setOutboxCount] = React.useState(0);
+
+  React.useEffect(() => {
+    const updateOutbox = () => {
+      const queue = storage.getQueue();
+      const unsubmittedTalks = talks.filter(talk => !talk.submittedAt);
+      setOutboxCount(queue.length + unsubmittedTalks.length);
+    };
+    
+    updateOutbox();
+    const interval = setInterval(updateOutbox, 1000);
+    
+    return () => clearInterval(interval);
+  }, [talks]);
+
   const todayTalks = talks.filter(talk => {
     const today = new Date().toISOString().split('T')[0];
     return talk.date === today;
@@ -40,15 +56,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         
         <div className="bg-orange-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-orange-600">{talks.length}</div>
-          <div className="text-sm text-gray-600">Total</div>
+          <div className="text-2xl font-bold text-orange-600">{outboxCount}</div>
+          <div className="text-sm text-gray-600 flex items-center gap-1">
+            <Send size={14} />
+            Outbox
+          </div>
         </div>
         
         <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">
-            {talks.reduce((sum, talk) => sum + talk.attendees.filter(a => a.present).length, 0)}
-          </div>
-          <div className="text-sm text-gray-600">Attendees</div>
+          <div className="text-2xl font-bold text-purple-600">{talks.length}</div>
+          <div className="text-sm text-gray-600">Total</div>
         </div>
       </div>
 
