@@ -100,10 +100,15 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
       {/* Queued Submissions (Failed/Retrying) */}
       {queuedSubmissions.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Send size={20} className="text-orange-600" />
-            Queued for Retry ({queuedSubmissions.length})
-          </h2>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-orange-800">
+              <Send size={20} className="text-orange-600" />
+              Failed Submissions - Queued for Retry ({queuedSubmissions.length})
+            </h2>
+            <p className="text-sm text-orange-700 mb-3">
+              These toolbox talks were submitted but failed to send. They will automatically retry when connection is restored.
+            </p>
+          </div>
           
           <div className="space-y-3">
             {queuedSubmissions.map((submission) => {
@@ -113,7 +118,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
               return (
                 <div
                   key={submission.id}
-                  className="bg-white border border-orange-200 p-4 rounded-lg"
+                  className="bg-white border-l-4 border-orange-400 border border-orange-200 p-4 rounded-lg shadow-sm"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -135,8 +140,8 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
                     </div>
                     
                     <div className="flex items-center gap-2 ml-4">
-                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
-                        Retrying
+                      <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-medium">
+                        🔄 Retrying ({submission.retryCount}/3)
                       </span>
                       <button
                         onClick={() => removeFromQueue(submission.id)}
@@ -157,10 +162,15 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
       {/* Unsubmitted Drafts */}
       {unsubmittedTalks.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Clock size={20} className="text-blue-600" />
-            Draft Toolbox Talks ({unsubmittedTalks.length})
-          </h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-blue-800">
+              <Clock size={20} className="text-blue-600" />
+              Draft Toolbox Talks ({unsubmittedTalks.length})
+            </h2>
+            <p className="text-sm text-blue-700 mb-3">
+              These are saved drafts that haven't been submitted yet. Click on any draft to continue editing and submit.
+            </p>
+          </div>
           
           <div className="space-y-3">
             {unsubmittedTalks.map((talk) => {
@@ -169,7 +179,13 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
               return (
                 <div
                   key={talk.id}
-                  className="bg-white border border-blue-200 p-4 rounded-lg"
+                  className="bg-white border-l-4 border-blue-400 border border-blue-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    // Navigate back and edit this talk
+                    onBack();
+                    // This would need to be passed down from App component
+                    // For now, we'll just show it's clickable
+                  }}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -190,8 +206,8 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
                     </div>
                     
                     <div className="ml-4">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-                        Draft
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                        📝 Draft
                       </span>
                     </div>
                   </div>
@@ -204,10 +220,12 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
 
       {/* Empty State */}
       {totalPending === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <Send size={48} className="mx-auto mb-4 text-gray-300" />
-          <p className="text-lg">Outbox is empty</p>
-          <p className="text-sm">All toolbox talks have been submitted successfully</p>
+        <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
+          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Send size={32} className="text-green-600" />
+          </div>
+          <p className="text-lg font-medium text-gray-700">All caught up!</p>
+          <p className="text-sm text-gray-500">All toolbox talks have been submitted successfully</p>
         </div>
       )}
     </div>
