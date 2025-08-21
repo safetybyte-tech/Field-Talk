@@ -23,6 +23,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
+  const [showValidation, setShowValidation] = React.useState(false);
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
@@ -63,10 +65,43 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   };
 
   const handleSave = () => {
+    setValidationErrors([]);
+    setShowValidation(false);
     onSave(editedTalk);
   };
 
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!editedTalk.title.trim()) errors.push('title');
+    if (!editedTalk.content.trim()) errors.push('content');
+    if (!editedTalk.date) errors.push('date');
+    if (!editedTalk.location.trim()) errors.push('location');
+    if (!editedTalk.weather.trim()) errors.push('weather');
+    if (!editedTalk.supervisor.trim()) errors.push('supervisor');
+    if (editedTalk.attendees.length === 0) errors.push('attendees');
+    
+    return errors;
+  };
+
   const handleSubmit = () => {
+    const errors = validateForm();
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setShowValidation(true);
+      
+      // Scroll to first error field
+      const firstErrorField = document.querySelector(`[data-field="${errors[0]}"]`);
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      return;
+    }
+    
+    setValidationErrors([]);
+    setShowValidation(false);
     const finalTalk = {
       ...editedTalk,
       submittedAt: Date.now()
@@ -98,9 +133,29 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
   const presentCount = editedTalk.attendees.filter(a => a.present).length;
   const totalCount = editedTalk.attendees.length;
+  const hasValidationErrors = validationErrors.length > 0;
+  const isFormValid = validateForm().length === 0;
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Validation Error Banner */}
+      {showValidation && hasValidationErrors && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold">Please complete all required fields:</span>
+          </div>
+          <ul className="list-disc list-inside space-y-1 text-sm">
+            {validationErrors.includes('title') && <li>Talk Title is required</li>}
+            {validationErrors.includes('content') && <li>Talk Content is required</li>}
+            {validationErrors.includes('date') && <li>Date is required</li>}
+            {validationErrors.includes('location') && <li>Location is required</li>}
+            {validationErrors.includes('weather') && <li>Weather is required</li>}
+            {validationErrors.includes('supervisor') && <li>Supervisor name is required</li>}
+            {validationErrors.includes('attendees') && <li>At least one attendee is required</li>}
+          </ul>
+        </div>
+      )}
+
       {/* Quick Template Selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,26 +183,36 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date
+            Date *
           </label>
           <input
+            data-field="date"
             type="date"
             value={editedTalk.date}
             onChange={(e) => setEditedTalk({...editedTalk, date: e.target.value})}
-            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+            className={`w-full p-3 border rounded-lg text-lg ${
+              showValidation && validationErrors.includes('date')
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                : 'border-gray-300'
+            }`}
           />
         </div>
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Location
+            Location *
           </label>
           <input
+            data-field="location"
             type="text"
             value={editedTalk.location}
             onChange={(e) => setEditedTalk({...editedTalk, location: e.target.value})}
             placeholder="Job site/location"
-            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+            className={`w-full p-3 border rounded-lg text-lg ${
+              showValidation && validationErrors.includes('location')
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                : 'border-gray-300'
+            }`}
           />
         </div>
       </div>
@@ -155,15 +220,20 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Weather
+            Weather *
           </label>
           <div className="flex gap-2">
             <input
+              data-field="weather"
               type="text"
               value={editedTalk.weather}
               onChange={(e) => setEditedTalk({...editedTalk, weather: e.target.value})}
               placeholder="Sunny, rainy, etc."
-              className="flex-1 p-3 border border-gray-300 rounded-lg text-lg"
+              className={`flex-1 p-3 border rounded-lg text-lg ${
+                showValidation && validationErrors.includes('weather')
+                  ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                  : 'border-gray-300'
+              }`}
             />
             <button
               type="button"
@@ -179,14 +249,19 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Supervisor
+            Supervisor *
           </label>
           <input
+            data-field="supervisor"
             type="text"
             value={editedTalk.supervisor}
             onChange={(e) => setEditedTalk({...editedTalk, supervisor: e.target.value})}
             placeholder="Supervisor name"
-            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
+            className={`w-full p-3 border rounded-lg text-lg ${
+              showValidation && validationErrors.includes('supervisor')
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                : 'border-gray-300'
+            }`}
           />
         </div>
       </div>
@@ -194,43 +269,65 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Talk Title
+          Talk Title *
         </label>
         <input
+          data-field="title"
           type="text"
           value={editedTalk.title}
           onChange={(e) => setEditedTalk({...editedTalk, title: e.target.value})}
           placeholder="Today's safety topic"
-          className="w-full p-3 border border-gray-300 rounded-lg text-lg font-medium"
+          className={`w-full p-3 border rounded-lg text-lg font-medium ${
+            showValidation && validationErrors.includes('title')
+              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+              : 'border-gray-300'
+          }`}
         />
       </div>
 
       {/* Content */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Talk Content
+          Talk Content *
         </label>
         <textarea
+          data-field="content"
           value={editedTalk.content}
           onChange={(e) => setEditedTalk({...editedTalk, content: e.target.value})}
           placeholder="Enter your toolbox talk content here..."
-          className="w-full p-4 border border-gray-300 rounded-lg text-base leading-relaxed"
+          className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
+            showValidation && validationErrors.includes('content')
+              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+              : 'border-gray-300'
+          }`}
           rows={12}
         />
       </div>
 
       {/* Attendance Section */}
-      <div className="border-t-2 border-gray-200 pt-6">
+      <div className={`border-t-2 pt-6 ${
+        showValidation && validationErrors.includes('attendees')
+          ? 'border-red-500'
+          : 'border-gray-200'
+      }`}>
         <div className="flex items-center gap-2 mb-4">
           <Users size={24} className="text-blue-600" />
-          <h2 className="text-xl font-bold">Attendance ({presentCount}/{totalCount})</h2>
+          <h2 className={`text-xl font-bold ${
+            showValidation && validationErrors.includes('attendees')
+              ? 'text-red-600'
+              : ''
+          }`}>
+            Attendance ({presentCount}/{totalCount}) *
+          </h2>
         </div>
         
-        <QuickAttendance
-          attendees={editedTalk.attendees}
-          onUpdateAttendees={updateAttendees}
-          recentNames={recentNames}
-        />
+        <div data-field="attendees">
+          <QuickAttendance
+            attendees={editedTalk.attendees}
+            onUpdateAttendees={updateAttendees}
+            recentNames={recentNames}
+          />
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -245,8 +342,12 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         
         <button
           onClick={handleSubmit}
-          disabled={!editedTalk.title || !editedTalk.content || totalCount === 0}
-          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
+          disabled={!isFormValid}
+          className={`flex-1 py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors ${
+            isFormValid
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-gray-400 cursor-not-allowed text-white'
+          }`}
         >
           <Send size={24} />
           Submit Talk
