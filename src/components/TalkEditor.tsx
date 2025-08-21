@@ -111,6 +111,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     onSubmit(finalTalk);
   };
 
+  const handleSubmitAttempt = () => {
+    // Always try to submit, which will trigger validation if needed
+    handleSubmit();
+  };
   const loadTemplate = (templateId: string) => {
     const template = TALK_TEMPLATES.find(t => t.id === templateId);
     if (template) {
@@ -359,12 +363,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         
         <button
           onClick={handleSubmit}
-          disabled={!isFormValid}
-          className={`flex-1 py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors ${
-            isFormValid
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-gray-400 cursor-not-allowed text-white'
-          }`}
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
         >
           <Send size={24} />
           Submit Talk
