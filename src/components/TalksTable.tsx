@@ -111,7 +111,7 @@ export const TalksTable: React.FC<TalksTableProps> = ({ talks, onEditTalk }) => 
       <div className="text-center py-12 text-gray-500" role="status" aria-live="polite">
         <Calendar size={48} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
         <p className="text-lg">No toolbox talks found</p>
-        <p className="text-sm">Create your first talk to get started</p>
+        <p className="text-sm">Create your first toolbox talk to get started</p>
       </div>
     );
   }

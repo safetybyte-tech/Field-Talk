@@ -20,8 +20,9 @@ export const storage = {
     }
     
     // Keep only last 50 talks
-    const limitedTalks = talks.slice(0, 50);
-    localStorage.setItem(STORAGE_KEYS.TALKS, JSON.stringify(limitedTalks));
+    // Keep only last 50 toolbox talks
+    const limitedToolboxTalks = talks.slice(0, 50);
+    localStorage.setItem(STORAGE_KEYS.TALKS, JSON.stringify(limitedToolboxTalks));
   },
 
   getTalks: (): ToolboxTalk[] => {
