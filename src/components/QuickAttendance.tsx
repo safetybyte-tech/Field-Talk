@@ -13,8 +13,6 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   onUpdateAttendees,
   recentNames = []
 }) => {
-  const [newName, setNewName] = React.useState('');
-  const [showAddForm, setShowAddForm] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
 
   // Get unique names from recent names (last 10 unique names)
@@ -25,17 +23,16 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addNewAttendee = () => {
-    if (newName.trim() && !attendees.find(a => a.name === newName.trim())) {
+  const addNewAttendee = (name: string) => {
+    if (name.trim() && !attendees.find(a => a.name === name.trim())) {
       const newAttendee: Attendee = {
         id: `attendee_${Date.now()}_${Math.random()}`,
-        name: newName.trim(),
+        name: name.trim(),
         present: true // Auto-mark as present when adding new
       };
       
       onUpdateAttendees([...attendees, newAttendee]);
-      setNewName('');
-      setShowAddForm(false);
+      setSearchTerm('');
     }
   };
 
@@ -75,6 +72,19 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
     return attendees.some(a => a.name === name);
   };
 
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      // If search term doesn't match any existing names, add as new worker
+      const exactMatch = uniqueRecentNames.find(name => 
+        name.toLowerCase() === searchTerm.toLowerCase()
+      );
+      
+      if (!exactMatch && !isAttendeeAdded(searchTerm.trim())) {
+        addNewAttendee(searchTerm.trim());
+      }
+    }
+  };
+
   const presentCount = attendees.filter(a => a.present).length;
   const totalCount = attendees.length;
 
@@ -89,7 +99,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
         </div>
       </div>
 
-      {/* Search Bar with Add Button */}
+      {/* Search Bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -97,45 +107,21 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search workers..."
+            onKeyPress={handleSearchKeyPress}
+            placeholder="Search workers or add new..."
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-lg"
           />
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg transition-colors"
-        >
-          <Plus size={20} />
-        </button>
       </div>
 
-      {/* Add New Worker Form */}
-      {showAddForm && (
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Enter new worker name"
-              className="flex-1 p-3 border border-gray-300 rounded-lg text-lg"
-              onKeyPress={(e) => e.key === 'Enter' && addNewAttendee()}
-              autoFocus
-            />
-            <button
-              onClick={addNewAttendee}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              disabled={!newName.trim()}
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
+      {/* Add New Worker Hint */}
+      {searchTerm.trim() && !filteredNames.some(name => 
+        name.toLowerCase() === searchTerm.toLowerCase()
+      ) && !isAttendeeAdded(searchTerm.trim()) && (
+        <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+          <p className="text-sm text-blue-700">
+            Press <kbd className="bg-blue-100 px-2 py-1 rounded text-xs font-mono">Enter</kbd> to add "{searchTerm}" as a new worker
+          </p>
         </div>
       )}
 
@@ -191,7 +177,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
               <>
                 <Users className="mx-auto mb-2 text-gray-300" size={32} />
                 <p>No recent workers found</p>
-                <p className="text-sm">Add workers using the + button above</p>
+                <p className="text-sm">Type a name in the search bar and press Enter to add new workers</p>
               </>
             )}
           </div>
