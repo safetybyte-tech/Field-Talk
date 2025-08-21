@@ -301,7 +301,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="text-purple-600" size={20} />
-            <h3 className="font-semibold text-purple-800">AI-Generated Safety Content</h3>
+            <h3 className="font-semibold text-purple-800">AI-Generated Toolbox Talk</h3>
           </div>
           
           <div className="space-y-3">
