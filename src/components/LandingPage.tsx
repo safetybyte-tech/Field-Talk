@@ -27,6 +27,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       name: 'Test User',
       createdAt: Date.now()
     };
+    auth.saveUser(testUser);
     onLogin(testUser);
   };
 
