@@ -3,6 +3,7 @@ import { Save, Send, Users, Cloud } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
+import { RecipientsSelector } from './RecipientsSelector';
 import { getCachedWeather } from '../utils/weather';
 
 interface TalkEditorProps {
@@ -46,6 +47,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         } finally {
           setLoadingWeather(false);
         }
+      recipients: [],
       }
     };
 
@@ -80,6 +82,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     if (!editedTalk.weather.trim()) errors.push('weather');
     if (!editedTalk.supervisor.trim()) errors.push('supervisor');
     if (editedTalk.attendees.length === 0) errors.push('attendees');
+    if (editedTalk.recipients.filter(r => r.selected).length === 0) errors.push('recipients');
     
     return errors;
   };
@@ -152,6 +155,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             {validationErrors.includes('weather') && <li>Weather is required</li>}
             {validationErrors.includes('supervisor') && <li>Supervisor name is required</li>}
             {validationErrors.includes('attendees') && <li>At least one attendee is required</li>}
+            {validationErrors.includes('recipients') && <li>At least one email recipient must be selected</li>}
           </ul>
         </div>
       )}
@@ -326,6 +330,20 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             attendees={editedTalk.attendees}
             onUpdateAttendees={updateAttendees}
             recentNames={recentNames}
+          />
+        </div>
+      </div>
+
+      {/* Recipients Section */}
+      <div className={`border-t-2 pt-6 ${
+        showValidation && validationErrors.includes('recipients')
+          ? 'border-red-500'
+          : 'border-gray-200'
+      }`}>
+        <div data-field="recipients">
+          <RecipientsSelector
+            recipients={editedTalk.recipients}
+            onUpdateRecipients={(recipients) => setEditedTalk({...editedTalk, recipients})}
           />
         </div>
       </div>

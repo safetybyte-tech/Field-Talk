@@ -7,6 +7,7 @@ export interface ToolboxTalk {
   weather: string;
   supervisor: string;
   attendees: Attendee[];
+  recipients: Recipient[];
   createdAt: number;
   submittedAt?: number;
 }
@@ -16,6 +17,14 @@ export interface Attendee {
   name: string;
   present: boolean;
   signature?: string;
+}
+
+export interface Recipient {
+  id: string;
+  name: string;
+  email: string;
+  selected: boolean;
+  isDefault?: boolean;
 }
 
 export interface QueuedSubmission {
