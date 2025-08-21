@@ -249,21 +249,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Testing Bypass Button */}
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="text-center">
-            <p className="text-sm text-yellow-800 mb-3">
-              <strong>Testing Mode:</strong> Skip login for demo purposes
-            </p>
-            <button
-              onClick={handleTestingBypass}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              🚀 Enter as Test User
-            </button>
-          </div>
-        </div>
-
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>Secure • Fast • Mobile-First</p>
