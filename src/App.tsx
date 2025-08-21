@@ -2,24 +2,39 @@ import React from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { TalkEditor } from './components/TalkEditor';
-import { ToolboxTalk } from './types';
+import { LandingPage } from './components/LandingPage';
+import { ToolboxTalk, User } from './types';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
+import { auth } from './utils/auth';
 
 type ViewType = 'dashboard' | 'edit';
 
 function App() {
+  const [user, setUser] = React.useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [currentView, setCurrentView] = React.useState<ViewType>('dashboard');
   const [talks, setTalks] = React.useState<ToolboxTalk[]>([]);
   const [currentTalk, setCurrentTalk] = React.useState<ToolboxTalk | null>(null);
   const [recentNames, setRecentNames] = React.useState<string[]>([]);
   const [submitStatus, setSubmitStatus] = React.useState<string>('');
 
+  // Check for existing user session on mount
+  React.useEffect(() => {
+    const currentUser = auth.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   // Load data on mount
   React.useEffect(() => {
-    setTalks(storage.getTalks());
-    setRecentNames(storage.getRecentAttendees());
-  }, []);
+    if (isAuthenticated) {
+      setTalks(storage.getTalks());
+      setRecentNames(storage.getRecentAttendees());
+    }
+  }, [isAuthenticated]);
 
   // Register service worker
   React.useEffect(() => {
@@ -28,6 +43,21 @@ function App() {
         .catch(error => console.log('SW registration failed:', error));
     }
   }, []);
+
+  const handleLogin = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+    setCurrentView('dashboard');
+    setCurrentTalk(null);
+    setTalks([]);
+    setRecentNames([]);
+  };
 
   const createNewTalk = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -39,7 +69,7 @@ function App() {
       date: today,
       location: '',
       weather: '',
-      supervisor: '',
+      supervisor: user?.name || '',
       attendees: [],
       createdAt: Date.now()
     };
@@ -105,11 +135,18 @@ function App() {
     setCurrentTalk(null);
   };
 
+  // Show landing page if not authenticated
+  if (!isAuthenticated) {
+    return <LandingPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         title={currentView === 'dashboard' ? 'Toolbox Talks' : 'Edit Talk'}
         showQueue={currentView === 'dashboard'}
+        user={user}
+        onLogout={handleLogout}
       />
       
       {submitStatus && (
@@ -142,6 +179,7 @@ function App() {
             onSave={saveTalk}
             onSubmit={submitTalk}
             recentNames={recentNames}
+            currentUser={user}
           />
         </div>
       )}

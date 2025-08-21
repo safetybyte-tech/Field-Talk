@@ -31,3 +31,16 @@ export interface TalkTemplate {
   content: string;
   category: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+}

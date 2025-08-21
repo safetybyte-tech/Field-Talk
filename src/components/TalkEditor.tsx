@@ -10,17 +10,26 @@ interface TalkEditorProps {
   onSave: (talk: ToolboxTalk) => void;
   onSubmit: (talk: ToolboxTalk) => void;
   recentNames: string[];
+  currentUser?: { name: string } | null;
 }
 
 export const TalkEditor: React.FC<TalkEditorProps> = ({
   talk,
   onSave,
   onSubmit,
-  recentNames
+  recentNames,
+  currentUser
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
+
+  // Auto-fill supervisor name from current user
+  React.useEffect(() => {
+    if (currentUser && !editedTalk.supervisor) {
+      setEditedTalk(prev => ({ ...prev, supervisor: currentUser.name }));
+    }
+  }, [currentUser, editedTalk.supervisor]);
 
   // Auto-populate weather on component mount if weather is empty
   React.useEffect(() => {
