@@ -18,6 +18,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
 
+  // Testing bypass - creates a simulated user
+  const handleTestingBypass = () => {
+    const testUser = {
+      id: 'test_user_123',
+      email: 'test@fieldtalk.com',
+      username: 'testuser',
+      name: 'Test User',
+      createdAt: Date.now()
+    };
+    onLogin(testUser);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -217,6 +229,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 ? "Don't have an account? Sign up" 
                 : "Already have an account? Sign in"
               }
+            </button>
+          </div>
+        </div>
+
+        {/* Testing Bypass Button */}
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="text-center">
+            <p className="text-sm text-yellow-800 mb-3">
+              <strong>Testing Mode:</strong> Skip login for demo purposes
+            </p>
+            <button
+              onClick={handleTestingBypass}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              🚀 Enter as Test User
             </button>
           </div>
         </div>
