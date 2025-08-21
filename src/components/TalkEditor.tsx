@@ -1,10 +1,18 @@
 import React from 'react';
 import { Save, Send, Users, Cloud } from 'lucide-react';
+import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
 import { RecipientsSelector } from './RecipientsSelector';
 import { getCachedWeather } from '../utils/weather';
+
+interface WeatherAlert {
+  title: string;
+  description: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
+  urgency: 'immediate' | 'expected' | 'future';
+}
 
 interface TalkEditorProps {
   talk: ToolboxTalk;
@@ -23,6 +31,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
+  const [weatherAlerts, setWeatherAlerts] = React.useState<WeatherAlert[]>([]);
+  const [weatherError, setWeatherError] = React.useState<string>('');
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
   const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
   const [showValidation, setShowValidation] = React.useState(false);
@@ -39,11 +49,14 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     const autoPopulateWeather = async () => {
       if (!editedTalk.weather) {
         setLoadingWeather(true);
+        setWeatherError('');
         try {
-          const weather = await getCachedWeather();
-          setEditedTalk(prev => ({ ...prev, weather }));
+          const weatherData = await getCachedWeather();
+          setEditedTalk(prev => ({ ...prev, weather: weatherData.description }));
+          setWeatherAlerts(weatherData.alerts || []);
         } catch (error) {
           console.warn('Could not auto-populate weather:', error);
+          setWeatherError('Unable to load weather automatically. Click the cloud icon to try again.');
         } finally {
           setLoadingWeather(false);
         }
@@ -55,13 +68,34 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
   const refreshWeather = async () => {
     setLoadingWeather(true);
+    setWeatherError('');
     try {
-      const weather = await getCachedWeather();
-      setEditedTalk(prev => ({ ...prev, weather }));
+      const weatherData = await getCachedWeather();
+      setEditedTalk(prev => ({ ...prev, weather: weatherData.description }));
+      setWeatherAlerts(weatherData.alerts || []);
     } catch (error) {
       console.warn('Could not refresh weather:', error);
+      setWeatherError('Unable to get current weather. Please enter manually or try again.');
     } finally {
       setLoadingWeather(false);
+    }
+  };
+
+  const getAlertIcon = (severity: WeatherAlert['severity']) => {
+    switch (severity) {
+      case 'extreme': return <Zap className="text-red-600" size={20} />;
+      case 'severe': return <AlertTriangle className="text-red-500" size={20} />;
+      case 'moderate': return <AlertCircle className="text-orange-500" size={20} />;
+      default: return <Info className="text-blue-500" size={20} />;
+    }
+  };
+
+  const getAlertBgColor = (severity: WeatherAlert['severity']) => {
+    switch (severity) {
+      case 'extreme': return 'bg-red-100 border-red-500 text-red-900';
+      case 'severe': return 'bg-red-50 border-red-400 text-red-800';
+      case 'moderate': return 'bg-orange-50 border-orange-400 text-orange-800';
+      default: return 'bg-blue-50 border-blue-400 text-blue-800';
     }
   };
 
@@ -249,12 +283,22 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               type="button"
               onClick={refreshWeather}
               disabled={loadingWeather}
-              className="px-4 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors disabled:opacity-50"
-              title="Get current weather"
+              className={`px-4 py-3 rounded-lg transition-colors disabled:opacity-50 ${
+                weatherError 
+                  ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 animate-pulse' 
+                  : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+              }`}
+              title={weatherError || "Get current weather"}
             >
               <Cloud size={20} className={loadingWeather ? 'animate-spin' : ''} />
             </button>
           </div>
+          {weatherError && (
+            <p className="text-sm text-orange-600 mt-1 flex items-center gap-1">
+              <AlertTriangle size={14} />
+              {weatherError}
+            </p>
+          )}
         </div>
         
         <div>
@@ -275,6 +319,43 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           />
         </div>
       </div>
+
+      {/* Weather Alerts Section */}
+      {weatherAlerts.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-red-600 flex items-center gap-2">
+            <AlertTriangle size={20} />
+            Weather Alerts for Your Location
+          </h3>
+          {weatherAlerts.map((alert, index) => (
+            <div
+              key={index}
+              className={`border-l-4 p-4 rounded-lg ${getAlertBgColor(alert.severity)}`}
+            >
+              <div className="flex items-start gap-3">
+                {getAlertIcon(alert.severity)}
+                <div className="flex-1">
+                  <h4 className="font-semibold text-lg mb-2">{alert.title}</h4>
+                  <div className="text-sm space-y-2">
+                    <p><strong>Safety Impact:</strong> {alert.description}</p>
+                    <div className="flex gap-4 text-xs">
+                      <span className="bg-white bg-opacity-50 px-2 py-1 rounded">
+                        Severity: {alert.severity.toUpperCase()}
+                      </span>
+                      <span className="bg-white bg-opacity-50 px-2 py-1 rounded">
+                        Urgency: {alert.urgency.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 p-3 bg-white bg-opacity-30 rounded text-sm">
+                <strong>⚠️ Include in Safety Discussion:</strong> Make sure to address this weather condition in today's toolbox talk and adjust work activities accordingly.
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Title */}
       <div>
