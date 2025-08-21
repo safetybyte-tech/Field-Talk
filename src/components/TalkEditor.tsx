@@ -20,6 +20,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
+  const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
 
   // Auto-populate weather on component mount if weather is empty
   React.useEffect(() => {
@@ -67,11 +68,15 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const loadTemplate = (templateId: string) => {
     const template = TALK_TEMPLATES.find(t => t.id === templateId);
     if (template) {
+      setSelectedTemplate(templateId);
       setEditedTalk({
         ...editedTalk,
         title: template.title,
         content: template.content
       });
+      
+      // Clear selection after 2 seconds to show it was applied
+      setTimeout(() => setSelectedTemplate(null), 2000);
     }
   };
 
@@ -97,7 +102,11 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             <button
               key={template.id}
               onClick={() => loadTemplate(template.id)}
-              className="text-left p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+              className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
+                selectedTemplate === template.id
+                  ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-300 shadow-md transform scale-105'
+                  : 'bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+              }`}
             >
               <div className="font-medium">{template.title}</div>
               <div className="text-sm text-gray-600">{template.category}</div>
