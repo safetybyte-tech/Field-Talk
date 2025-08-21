@@ -96,15 +96,24 @@ export const Header: React.FC<HeaderProps> = ({
           {showQueue && (
             <button
               onClick={onShowOutbox}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors ${
+              disabled={!isOnline}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors relative ${
+                !isOnline
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 
                 queueCount > 0 
                   ? 'bg-orange-600 hover:bg-orange-700 text-white' 
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               }`}
               title={`${queueCount} talks in outbox`}
             >
-              <Send size={14} />
+              <Send size={14} className={!isOnline ? 'text-gray-500' : ''} />
               <span>{queueCount}</span>
+              {!isOnline && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-6 h-0.5 bg-red-500 rotate-45 rounded-full"></div>
+                </div>
+              )}
             </button>
           )}
           
