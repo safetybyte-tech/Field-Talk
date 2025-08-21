@@ -71,7 +71,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     setLoadingWeather(true);
     setWeatherError('');
     try {
-      const weatherData = await getCachedWeather();
+      const weatherData = await getCachedWeather(true); // Force fresh fetch
       setEditedTalk(prev => ({ ...prev, weather: weatherData.description }));
       setWeatherAlerts(weatherData.alerts || []);
     } catch (error) {

@@ -181,11 +181,11 @@ export const getCurrentWeather = async (): Promise<{ description: string; alerts
 let weatherCache: { data: { description: string; alerts?: WeatherAlert[] }; timestamp: number } | null = null;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-export const getCachedWeather = async (): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
+export const getCachedWeather = async (forceRefresh: boolean = false): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
   const now = Date.now();
   
   // Return cached weather if it's still fresh
-  if (weatherCache && (now - weatherCache.timestamp) < CACHE_DURATION) {
+  if (!forceRefresh && weatherCache && (now - weatherCache.timestamp) < CACHE_DURATION) {
     return weatherCache.data;
   }
   
