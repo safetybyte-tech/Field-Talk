@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Send, Users, Cloud } from 'lucide-react';
+import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2 } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
@@ -37,6 +37,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
   const [showValidation, setShowValidation] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState<string>('');
+  const [workDescription, setWorkDescription] = React.useState<string>('');
+  const [generatingContent, setGeneratingContent] = React.useState(false);
+  const [gptError, setGptError] = React.useState<string>('');
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
@@ -149,6 +152,90 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     onSubmit(finalTalk);
   };
 
+  const generateTalkingPoints = async () => {
+    if (!workDescription.trim()) {
+      setGptError('Please describe the work being performed today');
+      return;
+    }
+
+    setGeneratingContent(true);
+    setGptError('');
+
+    try {
+      // Get the OpenAI API key from environment variables
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a construction safety expert who creates toolbox talks. Generate comprehensive safety content for construction workers based on the specific work being performed. Focus on:
+              
+              1. Specific hazards related to the work described
+              2. Required PPE for this type of work
+              3. Safe work procedures and best practices
+              4. Environmental considerations
+              5. Emergency procedures relevant to the work
+              6. Key discussion questions to engage workers
+              
+              Format the response as a complete toolbox talk with clear sections and bullet points. Make it practical and actionable for field supervisors.`
+            },
+            {
+              role: 'user',
+              content: `Create a comprehensive toolbox talk for the following work activity: ${workDescription.trim()}
+              
+              Include specific safety hazards, required PPE, safe procedures, and 3-5 discussion questions to ask the crew to ensure they understand the safety requirements.`
+            }
+          ],
+          max_tokens: 1500,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const generatedContent = data.choices?.[0]?.message?.content;
+      
+      if (!generatedContent) {
+        throw new Error('No content generated from API');
+      }
+
+      // Create a title based on the work description
+      const generatedTitle = `Safety Talk: ${workDescription.trim()}`;
+      
+      // Update the talk with generated content
+      setEditedTalk({
+        ...editedTalk,
+        title: generatedTitle,
+        content: generatedContent
+      });
+      
+      // Clear the work description after successful generation
+      setWorkDescription('');
+      
+    } catch (error) {
+      console.error('Error generating talking points:', error);
+      setGptError(error instanceof Error ? error.message : 'Failed to generate content. Please try again.');
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
+
   const handleSubmitAttempt = () => {
     // Always try to submit, which will trigger validation if needed
     handleSubmit();
@@ -204,11 +291,66 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       {/* Quick Template Selector */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Quick Templates:
+          Quick Start Options:
         </label>
-        <p className="text-sm text-gray-600 mb-3">
-          Use these templates to quickly get you started with common safety topics
+        <p className="text-sm text-gray-600 mb-4">
+          Choose a pre-made template or describe your work to generate custom safety content
         </p>
+        
+        {/* AI-Generated Content Section */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="text-purple-600" size={20} />
+            <h3 className="font-semibold text-purple-800">AI-Generated Safety Content</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Wrench size={16} className="inline mr-1" />
+                What work is being performed today?
+              </label>
+              <textarea
+                value={workDescription}
+                onChange={(e) => {
+                  setWorkDescription(e.target.value);
+                  setGptError(''); // Clear error when user types
+                }}
+                placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
+                className="w-full p-3 border border-gray-300 rounded-lg text-base resize-none"
+                rows={3}
+              />
+            </div>
+            
+            {gptError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                {gptError}
+              </div>
+            )}
+            
+            <button
+              onClick={generateTalkingPoints}
+              disabled={generatingContent || !workDescription.trim()}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            >
+              {generatingContent ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Generating Safety Content...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  Generate Custom Safety Talk
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        
+        {/* Pre-made Templates */}
+        <div>
+          <h4 className="font-medium text-gray-700 mb-3">Or choose a pre-made template:</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {TALK_TEMPLATES.map((template) => (
             <button
@@ -224,6 +366,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               <div className="text-sm text-gray-600">{template.category}</div>
             </button>
           ))}
+        </div>
         </div>
       </div>
 
