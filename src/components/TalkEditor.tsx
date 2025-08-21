@@ -168,6 +168,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Quick Templates:
         </label>
+        <p className="text-sm text-gray-600 mb-3">
+          Use these templates to quickly get you started with common safety topics
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {TALK_TEMPLATES.map((template) => (
             <button
