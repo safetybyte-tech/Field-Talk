@@ -36,6 +36,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
   const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
   const [showValidation, setShowValidation] = React.useState(false);
+  const [saveStatus, setSaveStatus] = React.useState<string>('');
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
@@ -102,7 +103,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const handleSave = () => {
     setValidationErrors([]);
     setShowValidation(false);
+    setSaveStatus('Saving...');
     onSave(editedTalk);
+    setSaveStatus('✅ Draft saved successfully!');
+    setTimeout(() => setSaveStatus(''), 3000);
   };
 
   const validateForm = (): string[] => {
@@ -437,12 +441,18 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
       {/* Action Buttons */}
       <div className="flex gap-3">
+        {saveStatus && (
+          <div className="w-full text-center py-2 mb-2 text-green-700 font-medium">
+            {saveStatus}
+          </div>
+        )}
         <button
           onClick={handleSave}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
+          disabled={saveStatus === 'Saving...'}
         >
           <Save size={24} />
-          Save Draft
+          {saveStatus === 'Saving...' ? 'Saving...' : 'Save Draft'}
         </button>
         
         <button
