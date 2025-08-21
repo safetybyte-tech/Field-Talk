@@ -57,17 +57,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="text-sm text-gray-600">This Week</div>
         </div>
         
-        <div className="bg-orange-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-orange-600">{outboxCount}</div>
-          <div className="text-sm text-gray-600 flex items-center gap-1">
-            <Send size={14} />
-            Outbox
-          </div>
-        </div>
-        
         <div className="bg-purple-50 p-4 rounded-lg">
           <div className="text-2xl font-bold text-purple-600">{talks.length}</div>
           <div className="text-sm text-gray-600">Total</div>
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-2xl font-bold text-gray-600">—</div>
+          <div className="text-sm text-gray-600">Reserved</div>
         </div>
       </div>
 

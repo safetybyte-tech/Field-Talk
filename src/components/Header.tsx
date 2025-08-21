@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, WifiOff, Clock, LogOut, User } from 'lucide-react';
+import { Wifi, WifiOff, Clock, LogOut, User, Send } from 'lucide-react';
 import { api } from '../utils/api';
 import { storage } from '../utils/storage';
 import { User as UserType } from '../types';
@@ -9,13 +9,15 @@ interface HeaderProps {
   showQueue?: boolean;
   user?: UserType | null;
   onLogout?: () => void;
+  onShowOutbox?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   title, 
   showQueue = true, 
   user, 
-  onLogout 
+  onLogout,
+  onShowOutbox
 }) => {
   const [isOnline, setIsOnline] = React.useState(api.isOnline());
   const [queueCount, setQueueCount] = React.useState(0);
@@ -91,11 +93,19 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
           
-          {showQueue && queueCount > 0 && (
-            <div className="flex items-center gap-1 bg-orange-600 px-2 py-1 rounded text-sm">
-              <Clock size={16} />
+          {showQueue && (
+            <button
+              onClick={onShowOutbox}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors ${
+                queueCount > 0 
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              }`}
+              title={`${queueCount} talks in outbox`}
+            >
+              <Send size={14} />
               <span>{queueCount}</span>
-            </div>
+            </button>
           )}
           
           <div className="flex items-center gap-1">

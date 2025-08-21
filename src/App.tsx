@@ -2,13 +2,14 @@ import React from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { TalkEditor } from './components/TalkEditor';
+import { Outbox } from './components/Outbox';
 import { LandingPage } from './components/LandingPage';
 import { ToolboxTalk, User } from './types';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
 
-type ViewType = 'dashboard' | 'edit';
+type ViewType = 'dashboard' | 'edit' | 'outbox';
 
 function App() {
   const [user, setUser] = React.useState<User | null>(null);
@@ -136,6 +137,11 @@ function App() {
     setCurrentTalk(null);
   };
 
+  const showOutbox = () => {
+    setCurrentView('outbox');
+    setCurrentTalk(null);
+  };
+
   // Show landing page if not authenticated
   if (!isAuthenticated) {
     return <LandingPage onLogin={handleLogin} />;
@@ -144,10 +150,15 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
-        title={currentView === 'dashboard' ? 'Field Talk' : 'Edit Talk'}
+        title={
+          currentView === 'dashboard' ? 'Field Talk' : 
+          currentView === 'edit' ? 'Edit Talk' : 
+          'Outbox'
+        }
         showQueue={currentView === 'dashboard'}
         user={user}
         onLogout={handleLogout}
+        onShowOutbox={showOutbox}
       />
       
       {submitStatus && (
@@ -161,6 +172,13 @@ function App() {
           talks={talks}
           onNewTalk={createNewTalk}
           onEditTalk={editTalk}
+        />
+      )}
+      
+      {currentView === 'outbox' && (
+        <Outbox
+          talks={talks}
+          onBack={goToDashboard}
         />
       )}
       
