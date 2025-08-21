@@ -106,6 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               }`}
               title={`${queueCount} talks in outbox`}
+              title={`${queueCount} toolbox talks in outbox`}
             >
               <Send size={14} />
               <span>{queueCount}</span>

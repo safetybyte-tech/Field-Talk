@@ -68,7 +68,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
         <div>
           <h1 className="text-2xl font-bold">Outbox</h1>
           <p className="text-gray-600">
-            {totalPending} talk{totalPending !== 1 ? 's' : ''} waiting to be sent
+            {totalPending} toolbox talk{totalPending !== 1 ? 's' : ''} waiting to be sent
           </p>
         </div>
         
@@ -92,7 +92,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
             <span className="font-medium">Offline Mode</span>
           </div>
           <p className="text-sm mt-1">
-            Talks will be sent automatically when connection is restored.
+            Toolbox talks will be sent automatically when connection is restored.
           </p>
         </div>
       )}
@@ -159,7 +159,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
         <div>
           <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Clock size={20} className="text-blue-600" />
-            Draft Talks ({unsubmittedTalks.length})
+            Draft Toolbox Talks ({unsubmittedTalks.length})
           </h2>
           
           <div className="space-y-3">
@@ -207,7 +207,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
         <div className="text-center py-12 text-gray-500">
           <Send size={48} className="mx-auto mb-4 text-gray-300" />
           <p className="text-lg">Outbox is empty</p>
-          <p className="text-sm">All talks have been submitted successfully</p>
+          <p className="text-sm">All toolbox talks have been submitted successfully</p>
         </div>
       )}
     </div>

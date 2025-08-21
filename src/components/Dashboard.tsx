@@ -80,7 +80,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Recent Talks */}
       {talks.length > 0 && (
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Recent Talks</h2>
+          <h2 className="text-xl font-bold">Recent Toolbox Talks</h2>
           <div className="flex bg-gray-100 rounded-lg p-1" role="tablist" aria-label="View mode">
             <button
               onClick={() => setViewMode('cards')}
@@ -115,7 +115,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {talks.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-            <p className="text-lg">No talks yet</p>
+            <p className="text-lg">No toolbox talks yet</p>
             <p className="text-sm">Create your first toolbox talk above</p>
           </div>
         ) : viewMode === 'table' ? (

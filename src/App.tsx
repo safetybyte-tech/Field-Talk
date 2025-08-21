@@ -108,20 +108,20 @@ function App() {
       const success = await api.submitTalk(talk);
       
       if (success) {
-        setSubmitStatus('✅ Talk submitted successfully!');
+        setSubmitStatus('✅ Toolbox talk submitted successfully!');
         setTimeout(() => {
           setSubmitStatus('');
           setCurrentView('dashboard');
         }, 2000);
       } else {
-        setSubmitStatus('📱 Saved offline - will sync when online');
+        setSubmitStatus('📱 Toolbox talk saved offline - will sync when online');
         setTimeout(() => {
           setSubmitStatus('');
           setCurrentView('dashboard');
         }, 3000);
       }
     } catch (error) {
-      setSubmitStatus('📱 Saved offline - will sync when online');
+      setSubmitStatus('📱 Toolbox talk saved offline - will sync when online');
       setTimeout(() => {
         setSubmitStatus('');
         setCurrentView('dashboard');
