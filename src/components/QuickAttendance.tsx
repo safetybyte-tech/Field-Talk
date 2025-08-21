@@ -74,19 +74,23 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
 
   const handleSearchKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
-      // If search term doesn't match any existing names, add as new worker
-      const exactMatch = uniqueRecentNames.find(name => 
-        name.toLowerCase() === searchTerm.toLowerCase()
-      );
-      
-      if (!exactMatch && !isAttendeeAdded(searchTerm.trim())) {
-        addNewAttendee(searchTerm.trim());
-      }
+      addWorkerFromSearch();
+    }
+  };
+
+  const addWorkerFromSearch = () => {
+    if (searchTerm.trim() && !isAttendeeAdded(searchTerm.trim())) {
+      addNewAttendee(searchTerm.trim());
     }
   };
 
   const presentCount = attendees.filter(a => a.present).length;
   const totalCount = attendees.length;
+
+  // Check if search term would create a new worker
+  const canAddNewWorker = searchTerm.trim() && 
+    !filteredNames.some(name => name.toLowerCase() === searchTerm.toLowerCase()) && 
+    !isAttendeeAdded(searchTerm.trim());
 
   return (
     <div className="space-y-6">
@@ -114,25 +118,33 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
         </div>
       </div>
 
-      {/* Add New Worker Hint */}
-      {searchTerm.trim() && !filteredNames.some(name => 
-        name.toLowerCase() === searchTerm.toLowerCase()
-      ) && !isAttendeeAdded(searchTerm.trim()) && (
-        <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-          <p className="text-sm text-blue-700">
-            Press <kbd className="bg-blue-100 px-2 py-1 rounded text-xs font-mono">Enter</kbd> to add "{searchTerm}" as a new worker
-          </p>
-        </div>
-      )}
-
       {/* Scrollable Worker Database */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-3">
-          Recent Workers ({filteredNames.length}):
+          Recent Workers ({filteredNames.length + (canAddNewWorker ? 1 : 0)}):
         </p>
         
-        {filteredNames.length > 0 ? (
+        {(filteredNames.length > 0 || canAddNewWorker) ? (
           <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+            {/* Add New Worker Option */}
+            {canAddNewWorker && (
+              <div
+                className="flex items-center justify-between p-4 border-b border-gray-100 bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors"
+                onClick={addWorkerFromSearch}
+              >
+                <div className="flex items-center gap-2">
+                  <Plus size={16} className="text-blue-600" />
+                  <span className="font-medium text-lg text-blue-700">
+                    Add "{searchTerm}"
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-full border-2 border-blue-500 bg-blue-500 text-white flex items-center justify-center">
+                  <Plus size={16} />
+                </div>
+              </div>
+            )}
+            
+            {/* Existing Workers */}
             {filteredNames.map((name, index) => {
               const isPresent = isAttendeePresent(name);
               const isAdded = isAttendeeAdded(name);
@@ -140,7 +152,9 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 transition-colors ${
+                  className={`flex items-center justify-between p-4 ${
+                    canAddNewWorker || index < filteredNames.length - 1 ? 'border-b border-gray-100' : ''
+                  } transition-colors ${
                     isPresent ? 'bg-green-50' : isAdded ? 'bg-red-50' : 'bg-white hover:bg-gray-50'
                   }`}
                 >
@@ -171,13 +185,13 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
             {searchTerm ? (
               <>
                 <Search className="mx-auto mb-2 text-gray-300" size={32} />
-                <p>No workers found matching "{searchTerm}"</p>
+                <p>No existing workers found matching "{searchTerm}"</p>
               </>
             ) : (
               <>
                 <Users className="mx-auto mb-2 text-gray-300" size={32} />
                 <p>No recent workers found</p>
-                <p className="text-sm">Type a name in the search bar and press Enter to add new workers</p>
+                <p className="text-sm">Type a name in the search bar to add new workers</p>
               </>
             )}
           </div>
