@@ -2,6 +2,14 @@ interface WeatherData {
   description: string;
   temperature: number;
   condition: string;
+  alerts?: WeatherAlert[];
+}
+
+interface WeatherAlert {
+  title: string;
+  description: string;
+  severity: 'minor' | 'moderate' | 'severe' | 'extreme';
+  urgency: 'immediate' | 'expected' | 'future';
 }
 
 interface GeolocationCoords {
@@ -58,17 +66,43 @@ const getCurrentPosition = (): Promise<GeolocationCoords> => {
 // Fallback weather service using a free API
 const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<WeatherData> => {
   try {
-    // Using Open-Meteo (free, no API key required)
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=celsius`
+    // Using Open-Meteo with alerts (free, no API key required)
+    const weatherResponse = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=celsius&timezone=auto`
     );
     
-    if (!response.ok) {
+    if (!weatherResponse.ok) {
       throw new Error('Weather API request failed');
     }
     
-    const data = await response.json();
-    const current = data.current_weather;
+    const weatherData = await weatherResponse.json();
+    const current = weatherData.current_weather;
+    
+    // Try to get weather alerts from NWS (US only) or other sources
+    let alerts: WeatherAlert[] = [];
+    try {
+      // For US locations, try to get NWS alerts
+      const alertsResponse = await fetch(
+        `https://api.weather.gov/alerts/active?point=${lat},${lon}`,
+        { 
+          headers: { 'User-Agent': 'FieldTalk/1.0' },
+          signal: AbortSignal.timeout(5000)
+        }
+      );
+      
+      if (alertsResponse.ok) {
+        const alertsData = await alertsResponse.json();
+        alerts = alertsData.features?.map((feature: any) => ({
+          title: feature.properties.headline || feature.properties.event,
+          description: feature.properties.description || feature.properties.instruction,
+          severity: mapSeverity(feature.properties.severity),
+          urgency: mapUrgency(feature.properties.urgency)
+        })).slice(0, 3) || []; // Limit to 3 most important alerts
+      }
+    } catch (alertError) {
+      // Alerts are optional, continue without them
+      console.warn('Could not fetch weather alerts:', alertError);
+    }
     
     // Map weather codes to simple descriptions
     const getConditionFromCode = (code: number): string => {
@@ -87,14 +121,33 @@ const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<Weathe
         current.temperature
       ),
       temperature: current.temperature,
-      condition: getConditionFromCode(current.weathercode)
+      condition: getConditionFromCode(current.weathercode),
+      alerts
     };
   } catch (error) {
     throw new Error('Failed to fetch weather data');
   }
 };
 
-export const getCurrentWeather = async (): Promise<string> => {
+// Helper functions for mapping alert severity and urgency
+const mapSeverity = (severity: string): WeatherAlert['severity'] => {
+  switch (severity?.toLowerCase()) {
+    case 'extreme': return 'extreme';
+    case 'severe': return 'severe';
+    case 'moderate': return 'moderate';
+    default: return 'minor';
+  }
+};
+
+const mapUrgency = (urgency: string): WeatherAlert['urgency'] => {
+  switch (urgency?.toLowerCase()) {
+    case 'immediate': return 'immediate';
+    case 'expected': return 'expected';
+    default: return 'future';
+  }
+};
+
+export const getCurrentWeather = async (): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
   try {
     // Get user's location
     const coords = await getCurrentPosition();
@@ -102,27 +155,33 @@ export const getCurrentWeather = async (): Promise<string> => {
     // Fetch weather data
     const weather = await fetchWeatherFromFreeAPI(coords.latitude, coords.longitude);
     
-    return weather.description;
+    return {
+      description: weather.description,
+      alerts: weather.alerts
+    };
   } catch (error) {
     console.warn('Could not get current weather:', error);
     
     // Return a generic description based on time of day
     const hour = new Date().getHours();
+    let description: string;
     if (hour >= 6 && hour < 12) {
-      return 'Morning conditions';
+      description = 'Morning conditions';
     } else if (hour >= 12 && hour < 18) {
-      return 'Afternoon conditions';
+      description = 'Afternoon conditions';
     } else {
-      return 'Evening conditions';
+      description = 'Evening conditions';
     }
+    
+    return { description };
   }
 };
 
 // Get weather with caching to avoid repeated API calls
-let weatherCache: { data: string; timestamp: number } | null = null;
+let weatherCache: { data: { description: string; alerts?: WeatherAlert[] }; timestamp: number } | null = null;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-export const getCachedWeather = async (): Promise<string> => {
+export const getCachedWeather = async (): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
   const now = Date.now();
   
   // Return cached weather if it's still fresh
