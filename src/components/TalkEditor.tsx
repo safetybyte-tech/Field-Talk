@@ -1,8 +1,9 @@
 import React from 'react';
-import { Save, Send, Users } from 'lucide-react';
+import { Save, Send, Users, Cloud } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
+import { getCachedWeather } from '../utils/weather';
 
 interface TalkEditorProps {
   talk: ToolboxTalk;
@@ -18,6 +19,38 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   recentNames
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
+  const [loadingWeather, setLoadingWeather] = React.useState(false);
+
+  // Auto-populate weather on component mount if weather is empty
+  React.useEffect(() => {
+    const autoPopulateWeather = async () => {
+      if (!editedTalk.weather) {
+        setLoadingWeather(true);
+        try {
+          const weather = await getCachedWeather();
+          setEditedTalk(prev => ({ ...prev, weather }));
+        } catch (error) {
+          console.warn('Could not auto-populate weather:', error);
+        } finally {
+          setLoadingWeather(false);
+        }
+      }
+    };
+
+    autoPopulateWeather();
+  }, [editedTalk.weather]);
+
+  const refreshWeather = async () => {
+    setLoadingWeather(true);
+    try {
+      const weather = await getCachedWeather();
+      setEditedTalk(prev => ({ ...prev, weather }));
+    } catch (error) {
+      console.warn('Could not refresh weather:', error);
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
 
   const handleSave = () => {
     onSave(editedTalk);
@@ -106,13 +139,24 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Weather
           </label>
-          <input
-            type="text"
-            value={editedTalk.weather}
-            onChange={(e) => setEditedTalk({...editedTalk, weather: e.target.value})}
-            placeholder="Sunny, rainy, etc."
-            className="w-full p-3 border border-gray-300 rounded-lg text-lg"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={editedTalk.weather}
+              onChange={(e) => setEditedTalk({...editedTalk, weather: e.target.value})}
+              placeholder="Sunny, rainy, etc."
+              className="flex-1 p-3 border border-gray-300 rounded-lg text-lg"
+            />
+            <button
+              type="button"
+              onClick={refreshWeather}
+              disabled={loadingWeather}
+              className="px-4 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              title="Get current weather"
+            >
+              <Cloud size={20} className={loadingWeather ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
         
         <div>
