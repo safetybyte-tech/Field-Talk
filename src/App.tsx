@@ -159,6 +159,7 @@ function App() {
         user={user}
         onLogout={handleLogout}
         onShowOutbox={showOutbox}
+        talks={talks}
       />
       
       {submitStatus && (

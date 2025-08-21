@@ -10,6 +10,7 @@ interface HeaderProps {
   user?: UserType | null;
   onLogout?: () => void;
   onShowOutbox?: () => void;
+  talks?: any[];
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -17,7 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   showQueue = true, 
   user, 
   onLogout,
-  onShowOutbox
+  onShowOutbox,
+  talks = []
 }) => {
   const [isOnline, setIsOnline] = React.useState(api.isOnline());
   const [queueCount, setQueueCount] = React.useState(0);
@@ -38,14 +40,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   React.useEffect(() => {
     const updateQueue = () => {
-      setQueueCount(storage.getQueue().length);
+      const queuedSubmissions = storage.getQueue().length;
+      const unsubmittedTalks = talks.filter(talk => !talk.submittedAt).length;
+      setQueueCount(queuedSubmissions + unsubmittedTalks);
     };
     
     updateQueue();
     const interval = setInterval(updateQueue, 1000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [talks]);
 
   React.useEffect(() => {
     if (isOnline && queueCount > 0) {
@@ -106,7 +110,6 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               }`}
               title={`${queueCount} talks in outbox`}
-              title={`${queueCount} toolbox talks in outbox`}
             >
               <Send size={14} />
               <span>{queueCount}</span>
