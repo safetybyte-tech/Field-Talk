@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, FileText, Calendar, Users, Send } from 'lucide-react';
 import { ToolboxTalk } from '../types';
 import { storage } from '../utils/storage';
+import { TalksTable } from './TalksTable';
 
 interface DashboardProps {
   talks: ToolboxTalk[];
@@ -15,6 +16,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onEditTalk
 }) => {
   const [outboxCount, setOutboxCount] = React.useState(0);
+  const [viewMode, setViewMode] = React.useState<'cards' | 'table'>('cards');
 
   React.useEffect(() => {
     const updateOutbox = () => {
@@ -79,15 +81,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </button>
 
       {/* Recent Talks */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Recent Talks</h2>
-        
+      {talks.length > 0 && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Recent Talks</h2>
+          <div className="flex bg-gray-100 rounded-lg p-1" role="tablist" aria-label="View mode">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'cards'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              role="tab"
+              aria-selected={viewMode === 'cards'}
+              aria-controls="talks-content"
+            >
+              Cards
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              role="tab"
+              aria-selected={viewMode === 'table'}
+              aria-controls="talks-content"
+            >
+              Table
+            </button>
+          </div>
+        </div>
+      )}
+      <div id="talks-content" role="tabpanel">
         {talks.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <FileText size={48} className="mx-auto mb-4 text-gray-300" />
             <p className="text-lg">No talks yet</p>
             <p className="text-sm">Create your first toolbox talk above</p>
           </div>
+        ) : viewMode === 'table' ? (
+          <TalksTable talks={talks} onEditTalk={onEditTalk} />
         ) : (
           <div className="space-y-3">
             {talks.slice(0, 10).map((talk) => {
