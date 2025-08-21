@@ -17,6 +17,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [outboxCount, setOutboxCount] = React.useState(0);
   const [viewMode, setViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [weeklyStats, setWeeklyStats] = React.useState({ completed: false, streak: 0 });
 
   React.useEffect(() => {
     const updateOutbox = () => {
@@ -29,6 +30,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const interval = setInterval(updateOutbox, 1000);
     
     return () => clearInterval(interval);
+  }, [talks]);
+
+  React.useEffect(() => {
+    const calculateWeeklyStats = () => {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      // Check if there's a submitted talk this week
+      const thisWeekTalk = talks.find(talk => {
+        const talkDate = new Date(talk.date);
+        return talkDate >= startOfWeek && talk.submittedAt;
+      });
+      
+      // Calculate streak by checking consecutive weeks backwards
+      let streak = 0;
+      let checkWeek = new Date(startOfWeek);
+      
+      while (true) {
+        const weekEnd = new Date(checkWeek);
+        weekEnd.setDate(checkWeek.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        
+        const weekHasTalk = talks.some(talk => {
+          const talkDate = new Date(talk.date);
+          return talkDate >= checkWeek && talkDate <= weekEnd && talk.submittedAt;
+        });
+        
+        if (weekHasTalk) {
+          streak++;
+          // Move to previous week
+          checkWeek.setDate(checkWeek.getDate() - 7);
+        } else {
+          break;
+        }
+      }
+      
+      setWeeklyStats({
+        completed: !!thisWeekTalk,
+        streak: streak
+      });
+    };
+    
+    calculateWeeklyStats();
   }, [talks]);
 
   const todayTalks = talks.filter(talk => {
@@ -62,9 +108,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="text-sm text-gray-600">Total</div>
         </div>
         
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-gray-600">—</div>
-          <div className="text-sm text-gray-600">Reserved</div>
+        <div className={`p-4 rounded-lg ${
+          weeklyStats.completed 
+            ? 'bg-green-50' 
+            : 'bg-orange-50'
+        }`}>
+          <div className={`text-2xl font-bold ${
+            weeklyStats.completed 
+              ? 'text-green-600' 
+              : 'text-orange-600'
+          }`}>
+            {weeklyStats.completed ? '✅' : '0/1'}
+          </div>
+          <div className={`text-sm ${
+            weeklyStats.completed 
+              ? 'text-green-600' 
+              : 'text-orange-600'
+          }`}>
+            This Week
+          </div>
+          {weeklyStats.streak > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              🔥 {weeklyStats.streak} week streak
+            </div>
+          )}
         </div>
       </div>
 
