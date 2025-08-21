@@ -175,7 +175,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               onClick={() => loadTemplate(template.id)}
               className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
                 selectedTemplate === template.id
-                  ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-300 shadow-md transform scale-105'
+                  ? 'bg-green-100 border-green-500 ring-2 ring-green-300 shadow-md transform scale-105'
                   : 'bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
               }`}
             >
