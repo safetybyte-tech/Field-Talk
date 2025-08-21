@@ -99,10 +99,13 @@ export const TalksTable: React.FC<TalksTableProps> = ({ talks, onEditTalk }) => 
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse as local date (not UTC)
+    const localDate = new Date(dateString + 'T00:00:00');
+    return localDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
   };
 

@@ -182,7 +182,7 @@ let weatherCache: { data: { description: string; alerts?: WeatherAlert[] }; time
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 export const getCachedWeather = async (forceRefresh: boolean = false): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
-  const now = Date.now();
+  const now = Date.now(); // This is fine as it's used for cache timing, not display
   
   // Return cached weather if it's still fresh
   if (!forceRefresh && weatherCache && (now - weatherCache.timestamp) < CACHE_DURATION) {

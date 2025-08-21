@@ -36,12 +36,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const calculateWeeklyStats = () => {
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday) in local time
       startOfWeek.setHours(0, 0, 0, 0);
       
       // Check if there's a submitted talk this week
       const thisWeekTalk = talks.find(talk => {
-        const talkDate = new Date(talk.date);
+        const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
         return talkDate >= startOfWeek && talk.submittedAt;
       });
       
@@ -55,7 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         weekEnd.setHours(23, 59, 59, 999);
         
         const weekHasTalk = talks.some(talk => {
-          const talkDate = new Date(talk.date);
+          const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
           return talkDate >= checkWeek && talkDate <= weekEnd && talk.submittedAt;
         });
         
@@ -78,14 +78,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [talks]);
 
   const todayTalks = talks.filter(talk => {
-    const today = new Date().toISOString().split('T')[0];
-    return talk.date === today;
+    const today = new Date();
+    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+      .toISOString()
+      .split('T')[0];
+    return talk.date === localToday;
   });
 
   const thisWeekTalks = talks.filter(talk => {
-    const talkDate = new Date(talk.date);
+    const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
     const today = new Date();
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
     return talkDate >= weekAgo && talkDate <= today;
   });
 
