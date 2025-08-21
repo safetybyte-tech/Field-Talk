@@ -144,7 +144,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
-        title={currentView === 'dashboard' ? 'Toolbox Talks' : 'Edit Talk'}
+        title={currentView === 'dashboard' ? 'Field Talk' : 'Edit Talk'}
         showQueue={currentView === 'dashboard'}
         user={user}
         onLogout={handleLogout}
