@@ -47,8 +47,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         } finally {
           setLoadingWeather(false);
         }
-      recipients: [],
-      }
     };
 
     autoPopulateWeather();
