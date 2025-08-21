@@ -171,9 +171,9 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
                     }`}
                   >
                     {isPresent ? (
-                      <Check size={16} />
+                      <Check size={20} />
                     ) : isAdded ? (
-                      <X size={16} />
+                      <X size={20} />
                     ) : null}
                   </button>
                 </div>
