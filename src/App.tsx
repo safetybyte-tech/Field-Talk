@@ -71,6 +71,7 @@ function App() {
       weather: '',
       supervisor: user?.name || '',
       attendees: [],
+      recipients: [],
       createdAt: Date.now()
     };
     
