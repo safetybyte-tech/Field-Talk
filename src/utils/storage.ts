@@ -62,8 +62,17 @@ export const storage = {
 
   // Recent Attendees
   saveRecentAttendees: (attendees: Attendee[]): void => {
-    const names = attendees.map(a => a.name);
-    localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(names));
+    const currentNames = storage.getRecentAttendees();
+    const newNames = attendees.map(a => a.name);
+    
+    // Combine new names with existing, removing duplicates and keeping most recent
+    const allNames = [...newNames, ...currentNames];
+    const uniqueNames = Array.from(new Set(allNames));
+    
+    // Keep only the most recent 20
+    const recentNames = uniqueNames.slice(0, 20);
+    
+    localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(recentNames));
   },
 
   getRecentAttendees: (): string[] => {

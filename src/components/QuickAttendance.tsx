@@ -16,7 +16,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   const [searchTerm, setSearchTerm] = React.useState('');
 
   // Get unique names from recent names (last 10 unique names)
-  const uniqueRecentNames = Array.from(new Set(recentNames)).slice(0, 10);
+  const uniqueRecentNames = Array.from(new Set(recentNames)).slice(0, 20);
 
   // Filter names based on search term
   const filteredNames = uniqueRecentNames.filter(name =>
@@ -125,7 +125,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
         </p>
         
         {(filteredNames.length > 0 || canAddNewWorker) ? (
-          <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+          <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
             {/* Add New Worker Option */}
             {canAddNewWorker && (
               <div
@@ -145,7 +145,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
             )}
             
             {/* Existing Workers */}
-            {filteredNames.map((name, index) => {
+            {filteredNames.slice(0, 4).map((name, index) => {
               const isPresent = isAttendeePresent(name);
               const isAdded = isAttendeeAdded(name);
               
@@ -153,7 +153,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
                 <div
                   key={index}
                   className={`flex items-center justify-between p-4 ${
-                    canAddNewWorker || index < filteredNames.length - 1 ? 'border-b border-gray-100' : ''
+                    canAddNewWorker || index < 3 ? 'border-b border-gray-100' : ''
                   } transition-colors ${
                     isPresent ? 'bg-green-50' : isAdded ? 'bg-red-50' : 'bg-white hover:bg-gray-50'
                   }`}
@@ -179,6 +179,47 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
                 </div>
               );
             })}
+            
+            {/* Show remaining workers if more than 4 */}
+            {filteredNames.length > 4 && (
+              <div className="max-h-48 overflow-y-auto">
+                {filteredNames.slice(4).map((name, index) => {
+                  const isPresent = isAttendeePresent(name);
+                  const isAdded = isAttendeeAdded(name);
+                  const actualIndex = index + 4;
+                  
+                  return (
+                    <div
+                      key={actualIndex}
+                      className={`flex items-center justify-between p-4 ${
+                        actualIndex < filteredNames.length - 1 ? 'border-b border-gray-100' : ''
+                      } transition-colors ${
+                        isPresent ? 'bg-green-50' : isAdded ? 'bg-red-50' : 'bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="font-medium text-lg">{name}</span>
+                      
+                      <button
+                        onClick={() => toggleAttendance(name)}
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isPresent
+                            ? 'bg-green-600 border-green-600 text-white'
+                            : isAdded
+                            ? 'bg-red-600 border-red-600 text-white'
+                            : 'border-gray-300 hover:border-green-500'
+                        }`}
+                      >
+                        {isPresent ? (
+                          <Check size={20} />
+                        ) : isAdded ? (
+                          <X size={20} />
+                        ) : null}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
