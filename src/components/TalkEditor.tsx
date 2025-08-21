@@ -345,6 +345,28 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                 </>
               )}
             </button>
+            
+            {(editedTalk.title || editedTalk.content) && (
+              <button
+                onClick={() => {
+                  // Scroll to the title and content fields for editing
+                  const titleField = document.querySelector('[data-field="title"]');
+                  if (titleField) {
+                    titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Focus the title field after scrolling
+                    setTimeout(() => {
+                      const titleInput = titleField as HTMLInputElement;
+                      titleInput.focus();
+                      titleInput.select();
+                    }, 500);
+                  }
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <Wrench size={20} />
+                Edit Generated Content
+              </button>
+            )}
           </div>
         </div>
         
