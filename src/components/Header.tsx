@@ -11,6 +11,7 @@ interface HeaderProps {
   onLogout?: () => void;
   onShowOutbox?: () => void;
   talks?: any[];
+  showTimer?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -19,11 +20,13 @@ export const Header: React.FC<HeaderProps> = ({
   user, 
   onLogout,
   onShowOutbox,
-  talks = []
+  talks = [],
+  showTimer = false
 }) => {
   const [isOnline, setIsOnline] = React.useState(api.isOnline());
   const [queueCount, setQueueCount] = React.useState(0);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const [elapsedTime, setElapsedTime] = React.useState(0);
 
   React.useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -51,16 +54,56 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, [talks]);
 
+  // Timer effect - only runs when showTimer is true
+  React.useEffect(() => {
+    if (!showTimer) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setElapsedTime(elapsed);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [showTimer]);
+
   React.useEffect(() => {
     if (isOnline && queueCount > 0) {
       api.processQueue();
     }
   }, [isOnline, queueCount]);
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTimerColor = (seconds: number) => {
+    const minutes = seconds / 60;
+    if (minutes >= 15) return 'text-red-400 bg-red-900/20 border-red-500';
+    if (minutes >= 10) return 'text-yellow-400 bg-yellow-900/20 border-yellow-500';
+    return 'text-green-400 bg-green-900/20 border-green-500';
+  };
   return (
     <header className="bg-gray-900 text-white p-4 shadow-lg">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">{title}</h1>
+        
+        {/* Timer in the center */}
+        {showTimer && (
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <div className={`px-4 py-2 rounded-lg border-2 font-mono text-lg font-bold transition-all duration-500 ${getTimerColor(elapsedTime)}`}>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                {formatTime(elapsedTime)}
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="flex items-center gap-3">
           {user && (

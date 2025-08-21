@@ -159,6 +159,7 @@ function App() {
           'Outbox'
         }
         showQueue={currentView === 'dashboard'}
+        showTimer={currentView === 'edit'}
         user={user}
         onLogout={handleLogout}
         onShowOutbox={showOutbox}
