@@ -60,7 +60,7 @@ function App() {
   };
 
   const createNewTalk = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
     
     const newTalk: ToolboxTalk = {
       id: `talk_${Date.now()}`,
