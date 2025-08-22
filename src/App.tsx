@@ -155,7 +155,7 @@ function App() {
       <Header 
         title={
           currentView === 'dashboard' ? 'Field Talk' : 
-          currentView === 'edit' ? 'Edit Talk' : 
+          currentView === 'edit' ? 'Tool Box Talk Record' : 
           'Outbox'
         }
         showQueue={currentView === 'dashboard'}
