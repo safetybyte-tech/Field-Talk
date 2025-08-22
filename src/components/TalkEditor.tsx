@@ -266,11 +266,25 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const totalCount = editedTalk.attendees.length;
   const hasValidationErrors = validationErrors.length > 0;
   const isFormValid = validateForm().length === 0;
+  const isSubmitted = !!editedTalk.submittedAt;
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Submitted Talk Banner */}
+      {isSubmitted && (
+        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold">✅ This toolbox talk has been submitted</span>
+          </div>
+          <p className="text-sm">
+            Submitted on {new Date(editedTalk.submittedAt).toLocaleString()}. 
+            All fields are now read-only to maintain record integrity.
+          </p>
+        </div>
+      )}
+
       {/* Validation Error Banner */}
-      {showValidation && hasValidationErrors && (
+      {!isSubmitted && showValidation && hasValidationErrors && (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">Please complete all required fields:</span>
@@ -289,6 +303,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       )}
 
       {/* Quick Template Selector */}
+      {!isSubmitted && (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Quick Start Options:
@@ -391,6 +406,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         </div>
         </div>
       </div>
+      )}
 
       {/* Basic Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -401,10 +417,13 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           <input
             data-field="date"
             type="date"
+            disabled={isSubmitted}
             value={editedTalk.date}
             onChange={(e) => setEditedTalk({...editedTalk, date: e.target.value})}
             className={`w-full p-3 border rounded-lg text-lg ${
-              showValidation && validationErrors.includes('date')
+              isSubmitted 
+                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                : showValidation && validationErrors.includes('date')
                 ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
                 : 'border-gray-300'
             }`}
@@ -418,11 +437,14 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           <input
             data-field="location"
             type="text"
+            disabled={isSubmitted}
             value={editedTalk.location}
             onChange={(e) => setEditedTalk({...editedTalk, location: e.target.value})}
             placeholder="Job site/location"
             className={`w-full p-3 border rounded-lg text-lg ${
-              showValidation && validationErrors.includes('location')
+              isSubmitted 
+                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                : showValidation && validationErrors.includes('location')
                 ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
                 : 'border-gray-300'
             }`}
@@ -439,15 +461,19 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             <input
               data-field="weather"
               type="text"
+              disabled={isSubmitted}
               value={editedTalk.weather}
               onChange={(e) => setEditedTalk({...editedTalk, weather: e.target.value})}
               placeholder="Sunny, rainy, etc."
               className={`flex-1 p-3 border rounded-lg text-lg ${
-                showValidation && validationErrors.includes('weather')
+                isSubmitted 
+                  ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                  : showValidation && validationErrors.includes('weather')
                   ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
                   : 'border-gray-300'
               }`}
             />
+            {!isSubmitted && (
             <button
               type="button"
               onClick={refreshWeather}
@@ -461,8 +487,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             >
               <Cloud size={20} className={loadingWeather ? 'animate-spin' : ''} />
             </button>
+            )}
           </div>
-          {weatherError && (
+          {!isSubmitted && weatherError && (
             <p className="text-sm text-orange-600 mt-1 flex items-center gap-1">
               <AlertTriangle size={14} />
               {weatherError}
@@ -477,11 +504,14 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           <input
             data-field="supervisor"
             type="text"
+            disabled={isSubmitted}
             value={editedTalk.supervisor}
             onChange={(e) => setEditedTalk({...editedTalk, supervisor: e.target.value})}
             placeholder="Supervisor name"
             className={`w-full p-3 border rounded-lg text-lg ${
-              showValidation && validationErrors.includes('supervisor')
+              isSubmitted 
+                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                : showValidation && validationErrors.includes('supervisor')
                 ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
                 : 'border-gray-300'
             }`}
@@ -490,7 +520,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       </div>
 
       {/* Weather Alerts Section */}
-      {weatherAlerts.length > 0 && (
+      {!isSubmitted && weatherAlerts.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-red-600 flex items-center gap-2">
             <AlertTriangle size={20} />
@@ -534,15 +564,20 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         <input
           data-field="title"
           type="text"
+          disabled={isSubmitted}
           value={editedTalk.title}
           onChange={(e) => setEditedTalk({...editedTalk, title: e.target.value})}
           placeholder="Today's safety topic"
           className={`w-full p-3 border rounded-lg text-lg font-medium ${
-            showValidation && validationErrors.includes('title')
-              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-              : 'border-gray-300'
-          }`}
-        />
+            isSubmitted 
+              ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+              showValidation && validationErrors.includes('date')
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                : 'border-gray-300'
+            }`}
+          />
+        </div>
+        
       </div>
 
       {/* Content */}
@@ -553,10 +588,13 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         <textarea
           data-field="content"
           value={editedTalk.content}
+          disabled={isSubmitted}
           onChange={(e) => setEditedTalk({...editedTalk, content: e.target.value})}
           placeholder="Enter your toolbox talk content here..."
           className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
-            showValidation && validationErrors.includes('content')
+            isSubmitted 
+              ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+              : showValidation && validationErrors.includes('content')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
               : 'border-gray-300'
           }`}
@@ -573,21 +611,53 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         <div className="flex items-center gap-2 mb-4">
           <Users size={24} className="text-blue-600" />
           <h2 className={`text-xl font-bold ${
-            showValidation && validationErrors.includes('attendees')
-              ? 'text-red-600'
-              : ''
-          }`}>
-            Attendance ({presentCount}/{totalCount}) *
-          </h2>
-        </div>
-        
-        <div data-field="attendees">
-          <QuickAttendance
-            attendees={editedTalk.attendees}
-            onUpdateAttendees={updateAttendees}
-            recentNames={recentNames}
-          />
-        </div>
+            showValidation && validationErrors.includes('content')
+              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+              : 'border-gray-300'
+          }`}
+          rows={12}
+        />
+      </div>
+
+        {isSubmitted ? (
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Final Attendance Record</h3>
+            <div className="space-y-3">
+              {editedTalk.attendees.length > 0 ? (
+                editedTalk.attendees.map((attendee) => (
+                  <div
+                    key={attendee.id}
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      attendee.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-lg">{attendee.name}</span>
+                      {attendee.isTemporary && (
+                        <span className="bg-orange-200 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                          TEMP
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-medium">
+                      {attendee.present ? '✅ Present' : '❌ Absent'}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No attendees recorded</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div data-field="attendees">
+            <QuickAttendance
+              attendees={editedTalk.attendees}
+              onUpdateAttendees={updateAttendees}
+              recentNames={recentNames}
+            />
+          </div>
+        )}
       </div>
 
       {/* Recipients Section */}
@@ -596,16 +666,52 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           ? 'border-red-500'
           : 'border-gray-200'
       }`}>
-        <div data-field="recipients">
-          <RecipientsSelector
-            recipients={editedTalk.recipients}
-            onUpdateRecipients={(recipients) => setEditedTalk({...editedTalk, recipients})}
-          />
+        {isSubmitted ? (
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Mail className="text-blue-600" size={20} />
+              Email Recipients
+            </h3>
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="space-y-2">
+                {editedTalk.recipients.filter(r => r.selected).length > 0 ? (
+                  editedTalk.recipients
+                    .filter(r => r.selected)
+                    .map((recipient) => (
+                      <div
+                        key={recipient.id}
+                        className="flex items-center justify-between p-3 bg-blue-100 text-blue-800 rounded-lg"
+                      >
+                        <div>
+                          <span className="font-medium">{recipient.name}</span>
+                          <div className="text-sm flex items-center gap-1">
+                            <Mail size={14} />
+                            {recipient.email}
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium">✅ Sent</span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No recipients selected</p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div data-field="recipients">
+            <RecipientsSelector
+              recipients={editedTalk.recipients}
+              onUpdateRecipients={(recipients) => setEditedTalk({...editedTalk, recipients})}
+            />
+          </div>
+        )}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
+      {!isSubmitted && (
+        <div className="flex gap-3">
         {saveStatus && (
           <div className="w-full text-center py-2 mb-2 text-green-700 font-medium">
             {saveStatus}
@@ -628,6 +734,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           Submit Talk
         </button>
       </div>
+      )}
     </div>
   );
 };
