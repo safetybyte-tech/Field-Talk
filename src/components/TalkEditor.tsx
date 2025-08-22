@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2 } from 'lucide-react';
+import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
