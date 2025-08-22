@@ -571,13 +571,11 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           className={`w-full p-3 border rounded-lg text-lg font-medium ${
             isSubmitted 
               ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
-              showValidation && validationErrors.includes('date')
-                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                : 'border-gray-300'
-            }`}
-          />
-        </div>
-        
+              : showValidation && validationErrors.includes('title')
+              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+              : 'border-gray-300'
+          }`}
+        />
       </div>
 
       {/* Content */}
@@ -610,14 +608,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       }`}>
         <div className="flex items-center gap-2 mb-4">
           <Users size={24} className="text-blue-600" />
-          <h2 className={`text-xl font-bold ${
-            showValidation && validationErrors.includes('content')
-              ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-              : 'border-gray-300'
-          }`}
-          rows={12}
-        />
-      </div>
+          <h2 className="text-xl font-bold text-gray-800">Attendance ({presentCount}/{totalCount})</h2>
+        </div>
 
         {isSubmitted ? (
           <div className="bg-gray-50 rounded-lg p-6">
@@ -706,7 +698,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             />
           </div>
         )}
-        </div>
       </div>
 
       {/* Action Buttons */}
