@@ -23,10 +23,6 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addNewAttendee = (name: string) => {
-    addNewAttendee(name, false);
-  };
-
   const addNewAttendee = (name: string, isTemporary: boolean = false) => {
     if (name.trim() && !attendees.find(a => a.name === name.trim())) {
       const newAttendee: Attendee = {
@@ -82,10 +78,6 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
     if (e.key === 'Enter' && searchTerm.trim()) {
       addWorkerFromSearch();
     }
-  };
-
-  const addWorkerFromSearch = () => {
-    addWorkerFromSearch(false);
   };
 
   const addWorkerFromSearch = (isTemporary: boolean = false) => {
