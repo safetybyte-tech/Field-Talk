@@ -16,6 +16,7 @@ export interface Attendee {
   id: string;
   name: string;
   present: boolean;
+  isTemporary?: boolean;
   signature?: string;
 }
 

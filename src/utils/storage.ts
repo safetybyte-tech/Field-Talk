@@ -63,7 +63,10 @@ export const storage = {
   // Recent Attendees
   saveRecentAttendees: (attendees: Attendee[]): void => {
     const currentNames = storage.getRecentAttendees();
-    const newNames = attendees.map(a => a.name);
+    // Only save non-temporary attendees to the recent list
+    const newNames = attendees
+      .filter(a => !a.isTemporary)
+      .map(a => a.name);
     
     // Combine new names with existing, removing duplicates and keeping most recent
     const allNames = [...newNames, ...currentNames];

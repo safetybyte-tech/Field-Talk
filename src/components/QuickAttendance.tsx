@@ -24,11 +24,16 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   );
 
   const addNewAttendee = (name: string) => {
+    addNewAttendee(name, false);
+  };
+
+  const addNewAttendee = (name: string, isTemporary: boolean = false) => {
     if (name.trim() && !attendees.find(a => a.name === name.trim())) {
       const newAttendee: Attendee = {
         id: `attendee_${Date.now()}_${Math.random()}`,
         name: name.trim(),
-        present: true // Auto-mark as present when adding new
+        present: true, // Auto-mark as present when adding new
+        isTemporary
       };
       
       onUpdateAttendees([...attendees, newAttendee]);
@@ -53,7 +58,8 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
       const newAttendee: Attendee = {
         id: `attendee_${Date.now()}_${Math.random()}`,
         name: name,
-        present: true
+        present: true,
+        isTemporary: false
       };
       onUpdateAttendees([...attendees, newAttendee]);
     }
@@ -79,8 +85,12 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   };
 
   const addWorkerFromSearch = () => {
+    addWorkerFromSearch(false);
+  };
+
+  const addWorkerFromSearch = (isTemporary: boolean = false) => {
     if (searchTerm.trim() && !isAttendeeAdded(searchTerm.trim())) {
-      addNewAttendee(searchTerm.trim());
+      addNewAttendee(searchTerm.trim(), isTemporary);
     }
   };
 
@@ -128,18 +138,30 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
           <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
             {/* Add New Worker Option */}
             {canAddNewWorker && (
-              <div
-                className="flex items-center justify-between p-4 border-b border-gray-100 bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors"
-                onClick={addWorkerFromSearch}
-              >
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-blue-50">
+                <div className="flex items-center gap-2 flex-1">
                   <Plus size={16} className="text-blue-600" />
                   <span className="font-medium text-lg text-blue-700">
                     Add "{searchTerm}"
                   </span>
                 </div>
-                <div className="w-8 h-8 rounded-full border-2 border-blue-500 bg-blue-500 text-white flex items-center justify-center">
-                  <Plus size={16} />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => addWorkerFromSearch(false)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                    title="Add worker and save to future lists"
+                  >
+                    <Plus size={14} />
+                    Add
+                  </button>
+                  <button
+                    onClick={() => addWorkerFromSearch(true)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                    title="Add temporary worker (won't be saved for future)"
+                  >
+                    <Plus size={14} />
+                    Temp
+                  </button>
                 </div>
               </div>
             )}
@@ -254,7 +276,14 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
                     attendee.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}
                 >
-                  <span className="font-medium">{attendee.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{attendee.name}</span>
+                    {attendee.isTemporary && (
+                      <span className="bg-orange-200 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                        TEMP
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
                       {attendee.present ? 'Present' : 'Absent'}
