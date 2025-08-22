@@ -270,6 +270,25 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Draft Talk Banner */}
+      {!isSubmitted && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold">📝 Draft Toolbox Talk</span>
+          </div>
+          <p className="text-sm">
+            Started on {new Date(editedTalk.createdAt).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })} • Not yet completed
+          </p>
+        </div>
+      )}
+
       {/* Submitted Talk Banner */}
       {isSubmitted && (
         <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg">
