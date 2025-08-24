@@ -8,6 +8,7 @@ interface OutboxProps {
   talks: ToolboxTalk[];
   onBack: () => void;
   onDeleteTalk: (id: string) => void;
+  onEditTalk: (id: string) => void;
 }
 
 export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk }) => {
@@ -189,10 +190,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk }) =
                   key={talk.id}
                   className="bg-white border-l-4 border-blue-400 border border-blue-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => {
-                    // Navigate back and edit this talk
-                    onBack();
-                    // This would need to be passed down from App component
-                    // For now, we'll just show it's clickable
+                    onEditTalk(talk.id);
                   }}
                 >
                   <div className="flex items-start justify-between">

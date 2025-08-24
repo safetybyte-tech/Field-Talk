@@ -203,6 +203,7 @@ function App() {
           talks={talks}
           onBack={goToDashboard}
           onDeleteTalk={deleteTalk}
+          onEditTalk={editTalk}
         />
       )}
       
