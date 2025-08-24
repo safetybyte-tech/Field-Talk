@@ -96,8 +96,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-primary-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-primary-600">{todayTalks.length}</div>
+        <div className={`p-4 rounded-lg ${
+          todayTalks.length > 1 ? 'bg-green-50' : 'bg-primary-50'
+        }`}>
+          <div className={`text-2xl font-bold ${
+            todayTalks.length > 1 ? 'text-green-600' : 'text-primary-600'
+          }`}>{todayTalks.length}</div>
           <div className="text-sm text-secondary-600">Today</div>
         </div>
         
