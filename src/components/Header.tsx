@@ -93,9 +93,9 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">{title}</h1>
         
-        {/* Timer in the center */}
+        {/* Timer on the right */}
         {showTimer && (
-          <div className="absolute left-1/2 transform -translate-x-1/2">
+          <div className="ml-auto mr-4">
             <div className={`px-4 py-2 rounded-lg border-2 font-mono text-lg font-bold transition-all duration-500 ${getTimerColor(elapsedTime)}`}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-current animate-pulse"></div>
