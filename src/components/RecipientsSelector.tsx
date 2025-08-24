@@ -343,16 +343,11 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => toggleDefault(recipient.id)}
-                    className={`p-2 rounded-full transition-colors ${
-                      recipient.isDefault
-                        ? 'text-yellow-600 hover:text-yellow-700'
-                        : 'text-gray-400 hover:text-yellow-600'
-                    }`}
+                    className="w-6 h-6 rounded-full bg-gray-100 hover:bg-yellow-200 text-gray-600 hover:text-yellow-600 flex items-center justify-center transition-colors"
                     title={recipient.isDefault ? 'Remove from auto-select' : 'Add to auto-select'}
                   >
-                    {recipient.isDefault ? <Star size={18} className="fill-current" /> : <StarOff size={18} />}
+                    {recipient.isDefault ? <Star size={12} className="fill-current text-yellow-600" /> : <StarOff size={12} />}
                   </button>
-                  
                   <button
                     onClick={() => {
                       setNewRecipient({
@@ -365,17 +360,17 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                       // Remove the existing recipient so it can be re-added with edits
                       removeRecipient(recipient.id);
                     }}
-                    className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+                    className="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 flex items-center justify-center transition-colors"
                     title="Edit recipient"
                   >
-                    <Edit size={18} />
+                    <Edit size={12} />
                   </button>
-                  
                   <button
                     onClick={() => removeRecipient(recipient.id)}
-                    className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+                    className="w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-colors"
+                    title="Remove recipient"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={12} />
                   </button>
                 </div>
               </div>
