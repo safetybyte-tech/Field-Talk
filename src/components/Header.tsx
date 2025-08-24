@@ -91,12 +91,12 @@ export const Header: React.FC<HeaderProps> = ({
     return 'text-green-400 bg-green-900/20 border-green-500';
   };
   return (
-    <header className="bg-gray-900 text-white p-4 shadow-lg">
+    <header className="bg-secondary-900 text-white p-4 shadow-lg">
       <div className="flex items-center justify-between">
         {onTitleClick ? (
           <button
             onClick={onTitleClick}
-            className="text-xl font-bold hover:text-blue-300 transition-colors cursor-pointer"
+            className="text-xl font-bold hover:text-primary-300 transition-colors cursor-pointer"
           >
             {title}
           </button>
@@ -121,18 +121,18 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-secondary-800 hover:bg-secondary-700 px-3 py-2 rounded-lg transition-colors"
               >
                 <User size={16} />
                 <span className="text-sm font-medium">{user.name}</span>
               </button>
               
               {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 bg-white text-gray-900 rounded-lg shadow-lg border min-w-48 z-50">
+                <div className="absolute right-0 top-full mt-2 bg-white text-secondary-900 rounded-lg shadow-lg border min-w-48 z-50">
                   <div className="p-3 border-b">
                     <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-gray-600">@{user.username}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-sm text-secondary-600">@{user.username}</p>
+                    <p className="text-xs text-secondary-500">{user.email}</p>
                   </div>
                   {onLogout && (
                     <button
@@ -140,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
                         setShowUserMenu(false);
                         onLogout();
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 text-red-600"
+                      className="w-full text-left px-3 py-2 hover:bg-secondary-100 flex items-center gap-2 text-red-600"
                     >
                       <LogOut size={16} />
                       Sign Out
@@ -156,12 +156,12 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onShowOutbox}
               className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors relative ${
                 !isOnline && queueCount > 0
-                  ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
                   : !isOnline
-                  ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                  ? 'bg-secondary-600 hover:bg-secondary-500 text-secondary-300'
                   : queueCount > 0 
-                  ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white' 
+                  : 'bg-secondary-700 hover:bg-secondary-600 text-secondary-300'
               }`}
               title={`${queueCount} talks in outbox`}
             >
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
           
           <div className="flex items-center gap-1">
             {isOnline ? (
-              <Wifi size={20} className="text-green-400" />
+              <Wifi size={20} className="text-primary-400" />
             ) : (
               <WifiOff size={20} className="text-red-400" />
             )}

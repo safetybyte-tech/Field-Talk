@@ -92,17 +92,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-primary-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="text-white" size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-secondary-900 mb-2">
             Field Talk
           </h1>
-          <p className="text-gray-600">
+          <p className="text-secondary-600">
             Mobile toolbox talk generator for construction sites
           </p>
         </div>
@@ -110,10 +110,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         {/* Auth Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-center text-secondary-900 mb-2">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h2>
-            <p className="text-center text-gray-600">
+            <p className="text-center text-secondary-600">
               {isLogin 
                 ? 'Sign in to access your toolbox talks' 
                 : 'Get started with your safety documentation'
@@ -130,17 +130,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="your@email.com"
                 />
               </div>
@@ -149,17 +149,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             {/* Username (Register only) */}
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-secondary-700 mb-1">
                   Username
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
                   <input
                     type="text"
                     required
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="username"
                   />
                 </div>
@@ -169,17 +169,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             {/* Full Name (Register only) */}
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-secondary-700 mb-1">
                   Full Name
                 </label>
                 <div className="relative">
-                  <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="John Smith"
                   />
                 </div>
@@ -188,23 +188,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
                 <input
                   type="password"
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="••••••••"
                   minLength={isLogin ? 1 : 6}
                 />
               </div>
               {!isLogin && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-secondary-500 mt-1">
                   Minimum 6 characters
                 </p>
               )}
@@ -214,7 +214,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium text-lg transition-colors"
+             className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-3 px-4 rounded-lg font-medium text-lg transition-colors"
             >
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
@@ -224,7 +224,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           <div className="mt-6 text-center">
             <button
               onClick={toggleMode}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-primary-600 hover:text-primary-700 font-medium"
             >
               {isLogin 
                 ? "Don't have an account? Sign up" 
@@ -235,14 +235,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
 
         {/* Testing Bypass Button */}
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="text-center">
-            <p className="text-sm text-yellow-800 mb-3">
+            <p className="text-sm text-red-800 mb-3">
               <strong>Testing Mode:</strong> Skip login for demo purposes
             </p>
             <button
               onClick={handleTestingBypass}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
               🚀 Enter as Test User
             </button>
@@ -250,7 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
+        <div className="text-center mt-8 text-sm text-secondary-500">
           <p>Secure • Fast • Mobile-First</p>
         </div>
       </div>

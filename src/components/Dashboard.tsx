@@ -96,42 +96,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-blue-600">{todayTalks.length}</div>
-          <div className="text-sm text-gray-600">Today</div>
+        <div className="bg-primary-50 p-4 rounded-lg">
+          <div className="text-2xl font-bold text-primary-600">{todayTalks.length}</div>
+          <div className="text-sm text-secondary-600">Today</div>
         </div>
         
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">{thisWeekTalks.length}</div>
-          <div className="text-sm text-gray-600">This Week</div>
+        <div className="bg-primary-100 p-4 rounded-lg">
+          <div className="text-2xl font-bold text-primary-700">{thisWeekTalks.length}</div>
+          <div className="text-sm text-secondary-600">This Week</div>
         </div>
         
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600">{talks.length}</div>
-          <div className="text-sm text-gray-600">Total</div>
+        <div className="bg-secondary-50 p-4 rounded-lg">
+          <div className="text-2xl font-bold text-secondary-700">{talks.length}</div>
+          <div className="text-sm text-secondary-600">Total</div>
         </div>
         
         <div className={`p-4 rounded-lg ${
           weeklyStats.completed 
-            ? 'bg-green-50' 
-            : 'bg-orange-50'
+            ? 'bg-primary-50' 
+            : 'bg-red-50'
         }`}>
           <div className={`text-2xl font-bold ${
             weeklyStats.completed 
-              ? 'text-green-600' 
-              : 'text-orange-600'
+              ? 'text-primary-600' 
+              : 'text-red-600'
           }`}>
             {weeklyStats.completed ? '✅' : '0/1'}
           </div>
           <div className={`text-sm ${
             weeklyStats.completed 
-              ? 'text-green-600' 
-              : 'text-orange-600'
+              ? 'text-primary-600' 
+              : 'text-red-600'
           }`}>
             This Week
           </div>
           {weeklyStats.streak > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-secondary-500 mt-1">
               🔥 {weeklyStats.streak} week streak
             </div>
           )}
@@ -141,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* New Talk Button */}
       <button
         onClick={onNewTalk}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 px-6 rounded-lg font-medium text-xl flex items-center justify-center gap-3 transition-colors shadow-lg"
+        className="w-full bg-primary-600 hover:bg-primary-700 text-white py-6 px-6 rounded-lg font-medium text-xl flex items-center justify-center gap-3 transition-colors shadow-lg"
       >
         <Plus size={28} />
         Start New Toolbox Talk
@@ -156,8 +156,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onClick={() => setViewMode('cards')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'cards'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-secondary-900 shadow-sm'
+                  : 'text-secondary-600 hover:text-secondary-900'
               }`}
               role="tab"
               aria-selected={viewMode === 'cards'}
@@ -169,8 +169,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               onClick={() => setViewMode('table')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'table'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-secondary-900 shadow-sm'
+                  : 'text-secondary-600 hover:text-secondary-900'
               }`}
               role="tab"
               aria-selected={viewMode === 'table'}
@@ -183,8 +183,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
       <div id="talks-content" role="tabpanel">
         {talks.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <FileText size={48} className="mx-auto mb-4 text-gray-300" />
+          <div className="text-center py-12 text-secondary-500">
+            <FileText size={48} className="mx-auto mb-4 text-secondary-300" />
             <p className="text-lg">No toolbox talks yet</p>
             <p className="text-sm">Create your first toolbox talk above</p>
           </div>
@@ -200,12 +200,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div
                   key={talk.id}
                   onClick={() => onEditTalk(talk.id)}
-                  className="bg-white border border-gray-200 p-4 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
+                  className="bg-white border border-secondary-200 p-4 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-medium text-lg">{talk.title}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <div className="flex items-center gap-4 text-sm text-secondary-600 mt-1">
                         <div className="flex items-center gap-1">
                           <Calendar size={16} />
                           {talk.date}
@@ -216,17 +216,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       </div>
                       {talk.location && (
-                        <p className="text-sm text-gray-500 mt-1">{talk.location}</p>
+                        <p className="text-sm text-secondary-500 mt-1">{talk.location}</p>
                       )}
                     </div>
                     
                     <div className="ml-4">
                       {talk.submittedAt ? (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                        <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs font-medium">
                           Submitted
                         </span>
                       ) : (
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
+                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">
                           Draft
                         </span>
                       )}

@@ -364,7 +364,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Draft Talk Banner */}
       {!isSubmitted && (
-        <div className="bg-orange-50 border-l-4 border-orange-500 text-orange-700 p-4 rounded-lg">
+        <div className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">📝 Draft Toolbox Talk</span>
           </div>
@@ -383,7 +383,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
       {/* Submitted Talk Banner */}
       {isSubmitted && (
-        <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg">
+        <div className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">✅ This toolbox talk has been submitted</span>
           </div>
@@ -424,15 +424,15 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         </p>
         
         {/* AI-Generated Content Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+        <div className="bg-gradient-to-r from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="text-purple-600" size={20} />
-            <h3 className="font-semibold text-purple-800">AI-Generated Toolbox Talk</h3>
+            <Sparkles className="text-primary-600" size={20} />
+            <h3 className="font-semibold text-primary-800">AI-Generated Toolbox Talk</h3>
           </div>
           
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-secondary-700 mb-1">
                 <Wrench size={16} className="inline mr-1" />
                 What work is being performed today?
               </label>
@@ -443,7 +443,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                   setGptError(''); // Clear error when user types
                 }}
                 placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
-                className="w-full p-3 border border-gray-300 rounded-lg text-base resize-none"
+                className="w-full p-3 border border-secondary-300 rounded-lg text-base resize-none"
                 rows={3}
               />
             </div>
@@ -457,7 +457,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             <button
               onClick={generateTalkingPoints}
               disabled={generatingContent || !workDescription.trim()}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
             >
               {generatingContent ? (
                 <>
@@ -489,7 +489,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                     }, 500);
                   }
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
               >
                 <Wrench size={20} />
                 Edit Generated Content
@@ -500,7 +500,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         
         {/* Pre-made Templates */}
         <div>
-          <h4 className="font-medium text-gray-700 mb-3">Or choose a pre-made template:</h4>
+          <h4 className="font-medium text-secondary-700 mb-3">Or choose a pre-made template:</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {TALK_TEMPLATES.map((template) => (
             <button
@@ -508,12 +508,12 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               onClick={() => loadTemplate(template.id)}
               className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
                 selectedTemplate === template.id
-                  ? 'bg-green-100 border-green-500 ring-2 ring-green-300 shadow-md transform scale-105'
-                  : 'bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+                  ? 'bg-primary-100 border-primary-500 ring-2 ring-primary-300 shadow-md transform scale-105'
+                  : 'bg-secondary-50 border-secondary-200 hover:bg-secondary-100 hover:border-secondary-300'
               }`}
             >
               <div className="font-medium">{template.title}</div>
-              <div className="text-sm text-gray-600">{template.category}</div>
+              <div className="text-sm text-secondary-600">{template.category}</div>
             </button>
           ))}
         </div>
@@ -524,7 +524,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       {/* Basic Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-secondary-700 mb-1">
             Date *
           </label>
           <input
@@ -535,16 +535,16 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             onChange={(e) => setEditedTalk({...editedTalk, date: e.target.value})}
             className={`w-full p-3 border rounded-lg text-lg ${
               isSubmitted 
-                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
                 : showValidation && validationErrors.includes('date')
                 ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                : 'border-gray-300'
+                : 'border-secondary-300'
             }`}
           />
         </div>
         
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-secondary-700 mb-1">
             Location *
           </label>
           <div className="relative">
@@ -560,16 +560,16 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               placeholder="Search locations or type new location..."
               className={`w-full p-3 border rounded-lg text-lg ${
                 isSubmitted 
-                  ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                  ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
                   : showValidation && validationErrors.includes('location')
                   ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                  : 'border-gray-300'
+                  : 'border-secondary-300'
               }`}
             />
             
             {/* Dropdown for location suggestions */}
             {!isSubmitted && showLocationDropdown && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-secondary-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {/* Show filtered suggestions */}
                 {filteredLocations.length > 0 && (
                   <>
@@ -578,7 +578,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                         key={index}
                         type="button"
                         onClick={() => handleLocationSelect(location)}
-                        className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-secondary-100 last:border-b-0 transition-colors"
                       >
                         <span className="font-medium">{location}</span>
                       </button>
@@ -592,11 +592,11 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => handleLocationSelect(locationSearch.trim())}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50 border-b border-gray-100 bg-green-25 transition-colors"
+                    className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-secondary-100 bg-primary-25 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Plus size={16} className="text-green-600" />
-                      <span className="font-medium text-green-700">
+                      <Plus size={16} className="text-primary-600" />
+                      <span className="font-medium text-primary-700">
                         Add "{locationSearch.trim()}"
                       </span>
                     </div>
@@ -605,7 +605,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                 
                 {/* Show message if no results */}
                 {filteredLocations.length === 0 && locationSearch.trim() && (
-                  <div className="px-4 py-3 text-gray-500 text-center">
+                  <div className="px-4 py-3 text-secondary-500 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Search size={16} />
                       <span>No matching locations found</span>
@@ -613,7 +613,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                     <button
                       type="button"
                       onClick={() => handleLocationSelect(locationSearch.trim())}
-                      className="text-green-600 hover:text-green-700 font-medium"
+                      className="text-primary-600 hover:text-primary-700 font-medium"
                     >
                       Add "{locationSearch.trim()}" as new location
                     </button>
@@ -627,7 +627,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-secondary-700 mb-1">
             Weather *
           </label>
           <div className="flex gap-2">
@@ -640,10 +640,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               placeholder="Sunny, rainy, etc."
               className={`flex-1 p-3 border rounded-lg text-lg ${
                 isSubmitted 
-                  ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                  ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
                   : showValidation && validationErrors.includes('weather')
                   ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                  : 'border-gray-300'
+                  : 'border-secondary-300'
               }`}
             />
             {!isSubmitted && (
@@ -653,8 +653,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               disabled={loadingWeather}
               className={`px-4 py-3 rounded-lg transition-colors disabled:opacity-50 ${
                 weatherError 
-                  ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 animate-pulse' 
-                  : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                  ? 'bg-red-100 hover:bg-red-200 text-red-700 animate-pulse' 
+                  : 'bg-primary-100 hover:bg-primary-200 text-primary-700'
               }`}
               title={weatherError || "Get current weather"}
             >
@@ -663,7 +663,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             )}
           </div>
           {!isSubmitted && weatherError && (
-            <p className="text-sm text-orange-600 mt-1 flex items-center gap-1">
+            <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
               <AlertTriangle size={14} />
               {weatherError}
             </p>
@@ -671,7 +671,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-secondary-700 mb-1">
             Supervisor *
           </label>
           <input
@@ -683,10 +683,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             placeholder="Supervisor name"
             className={`w-full p-3 border rounded-lg text-lg ${
               isSubmitted 
-                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
                 : showValidation && validationErrors.includes('supervisor')
                 ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                : 'border-gray-300'
+                : 'border-secondary-300'
             }`}
           />
         </div>
@@ -731,7 +731,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-secondary-700 mb-1">
           Talk Title *
         </label>
         <input
@@ -743,17 +743,17 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           placeholder="Today's safety topic"
           className={`w-full p-3 border rounded-lg text-lg font-medium ${
             isSubmitted 
-              ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+              ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
               : showValidation && validationErrors.includes('title')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-              : 'border-gray-300'
+              : 'border-secondary-300'
           }`}
         />
       </div>
 
       {/* Content */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-secondary-700 mb-1">
           Talk Content *
         </label>
         <textarea
@@ -764,10 +764,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           placeholder="Enter your toolbox talk content here..."
           className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
             isSubmitted 
-              ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+              ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
               : showValidation && validationErrors.includes('content')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-              : 'border-gray-300'
+              : 'border-secondary-300'
           }`}
           rows={12}
         />
@@ -777,15 +777,15 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       <div className={`border-t-2 pt-6 ${
         showValidation && validationErrors.includes('attendees')
           ? 'border-red-500'
-          : 'border-gray-200'
+          : 'border-secondary-200'
       }`}>
         <div className="flex items-center gap-2 mb-4">
-          <Users size={24} className="text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">Attendance ({presentCount}/{totalCount})</h2>
+          <Users size={24} className="text-primary-600" />
+          <h2 className="text-xl font-bold text-secondary-800">Attendance ({presentCount}/{totalCount})</h2>
         </div>
 
         {isSubmitted ? (
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-secondary-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Final Attendance Record</h3>
             <div className="space-y-3">
               {editedTalk.attendees.length > 0 ? (
@@ -793,7 +793,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                   <div
                     key={attendee.id}
                     className={`flex items-center justify-between p-3 rounded-lg ${
-                      attendee.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      attendee.present ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -810,7 +810,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No attendees recorded</p>
+                <p className="text-secondary-500 text-center py-4">No attendees recorded</p>
               )}
             </div>
           </div>
@@ -837,15 +837,15 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       <div className={`border-t-2 pt-6 ${
         showValidation && validationErrors.includes('recipients')
           ? 'border-red-500'
-          : 'border-gray-200'
+          : 'border-secondary-200'
       }`}>
         {isSubmitted ? (
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Mail className="text-blue-600" size={20} />
+              <Mail className="text-primary-600" size={20} />
               Email Recipients
             </h3>
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-secondary-50 rounded-lg p-6">
               <div className="space-y-2">
                 {editedTalk.recipients.filter(r => r.selected).length > 0 ? (
                   editedTalk.recipients
@@ -853,7 +853,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                     .map((recipient) => (
                       <div
                         key={recipient.id}
-                        className="flex items-center justify-between p-3 bg-blue-100 text-blue-800 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-primary-100 text-primary-800 rounded-lg"
                       >
                         <div>
                           <span className="font-medium">{recipient.name}</span>
@@ -866,7 +866,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                       </div>
                     ))
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No recipients selected</p>
+                  <p className="text-secondary-500 text-center py-4">No recipients selected</p>
                 )}
               </div>
             </div>
@@ -891,7 +891,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         )}
         <button
           onClick={handleSave}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
+          className="flex-1 bg-secondary-600 hover:bg-secondary-700 disabled:bg-secondary-400 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
           disabled={saveStatus === 'Saving...'}
         >
           <Save size={24} />
@@ -900,7 +900,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         
         <button
           onClick={handleSubmit}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
+          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
         >
           <Send size={24} />
           Submit Talk

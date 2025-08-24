@@ -201,7 +201,7 @@ function App() {
       />
       
       {submitStatus && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 text-center">
+        <div className="bg-primary-100 border-l-4 border-primary-500 text-primary-700 p-4 text-center">
           {submitStatus}
         </div>
       )}
@@ -228,7 +228,7 @@ function App() {
           <div className="p-4">
             <button
               onClick={goToDashboard}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-primary-600 hover:text-primary-800 font-medium"
             >
               ← Back to Dashboard
             </button>
