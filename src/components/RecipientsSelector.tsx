@@ -25,6 +25,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
   const [newRecipient, setNewRecipient] = React.useState({
     name: '',
     email: '',
+    company: '',
     isDefault: false
   });
 
@@ -84,6 +85,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
       
       onUpdateRecipients([...recipients, recipient]);
       setNewRecipient({ name: '', email: '', isDefault: false });
+      setNewRecipient({ name: '', email: '', company: '', isDefault: false });
       setShowAddForm(false);
     }
   };
@@ -197,6 +199,16 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
               onChange={(e) => setNewRecipient({...newRecipient, email: e.target.value})}
               placeholder="email@company.com"
               className="p-3 border border-gray-300 rounded-lg"
+            />
+          </div>
+          
+          <div>
+            <input
+              type="text"
+              value={newRecipient.company}
+              onChange={(e) => setNewRecipient({...newRecipient, company: e.target.value})}
+              placeholder="Company name (optional)"
+              className="w-full p-3 border border-gray-300 rounded-lg"
             />
           </div>
           
