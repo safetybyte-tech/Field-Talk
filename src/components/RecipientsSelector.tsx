@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Users, Plus, Trash2, Star, StarOff, Search } from 'lucide-react';
+import { Mail, Users, Plus, Trash2, Star, StarOff, Search, Edit } from 'lucide-react';
 import { Recipient } from '../types';
 
 interface RecipientsSelectorProps {
@@ -351,6 +351,24 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                     title={recipient.isDefault ? 'Remove from auto-select' : 'Add to auto-select'}
                   >
                     {recipient.isDefault ? <Star size={18} className="fill-current" /> : <StarOff size={18} />}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setNewRecipient({
+                        name: recipient.name,
+                        email: recipient.email,
+                        company: recipient.email.split('@')[1]?.split('.')[0] || '',
+                        isDefault: recipient.isDefault
+                      });
+                      setShowAddForm(true);
+                      // Remove the existing recipient so it can be re-added with edits
+                      removeRecipient(recipient.id);
+                    }}
+                    className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+                    title="Edit recipient"
+                  >
+                    <Edit size={18} />
                   </button>
                   
                   <button
