@@ -20,6 +20,11 @@ function App() {
   const [recentNames, setRecentNames] = React.useState<string[]>([]);
   const [submitStatus, setSubmitStatus] = React.useState<string>('');
 
+  const removeRecentName = (name: string) => {
+    storage.removeRecentAttendee(name);
+    setRecentNames(storage.getRecentAttendees());
+  };
+
   // Check for existing user session on mount
   React.useEffect(() => {
     const currentUser = auth.getCurrentUser();
