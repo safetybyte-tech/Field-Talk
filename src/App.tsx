@@ -150,6 +150,13 @@ function App() {
     setCurrentTalk(null);
   };
 
+  const saveAndGoToDashboard = () => {
+    if (currentTalk) {
+      saveTalk(currentTalk);
+    }
+    goToDashboard();
+  };
+
   const showOutbox = () => {
     setCurrentView('outbox');
     setCurrentTalk(null);
@@ -174,6 +181,7 @@ function App() {
         onLogout={handleLogout}
         onShowOutbox={showOutbox}
         talks={talks}
+        onTitleClick={currentView === 'edit' ? saveAndGoToDashboard : undefined}
       />
       
       {submitStatus && (

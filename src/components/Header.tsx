@@ -12,6 +12,7 @@ interface HeaderProps {
   onShowOutbox?: () => void;
   talks?: any[];
   showTimer?: boolean;
+  onTitleClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -21,7 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onShowOutbox,
   talks = [],
-  showTimer = false
+  showTimer = false,
+  onTitleClick
 }) => {
   const [isOnline, setIsOnline] = React.useState(api.isOnline());
   const [queueCount, setQueueCount] = React.useState(0);
@@ -91,7 +93,16 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-gray-900 text-white p-4 shadow-lg">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{title}</h1>
+        {onTitleClick ? (
+          <button
+            onClick={onTitleClick}
+            className="text-xl font-bold hover:text-blue-300 transition-colors cursor-pointer"
+          >
+            {title}
+          </button>
+        ) : (
+          <h1 className="text-xl font-bold">{title}</h1>
+        )}
         
         {/* Timer on the right */}
         {showTimer && (
