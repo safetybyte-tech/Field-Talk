@@ -1,5 +1,6 @@
 import { ToolboxTalk, QueuedSubmission } from '../types';
 import { storage } from './storage';
+import { logger } from './logger';
 
 const WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK;
 
@@ -14,6 +15,9 @@ export const api = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
+      // Get logs for this talk to include in payload
+      const talkLogs = logger.getLogsForTalk(talk.id);
+
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -21,6 +25,7 @@ export const api = {
         },
         body: JSON.stringify({
           talk,
+          _logs: talkLogs,
           timestamp: Date.now(),
           type: 'toolbox_talk'
         }),
@@ -28,7 +33,14 @@ export const api = {
       });
 
       clearTimeout(timeoutId);
-      return response.ok;
+      
+      if (response.ok) {
+        // Clear logs for this talk after successful submission
+        logger.clearLogsForTalk(talk.id);
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Submission failed:', error);
       

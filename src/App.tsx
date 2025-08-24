@@ -8,6 +8,7 @@ import { ToolboxTalk, User } from './types';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
+import { logger } from './utils/logger';
 
 type ViewType = 'dashboard' | 'edit' | 'outbox';
 
@@ -89,6 +90,9 @@ function App() {
       createdAt: Date.now()
     };
     
+    // Log task selection
+    logger.logEvent(newTalk.id, 'task_selected', { source: 'new_talk_button' });
+    
     setCurrentTalk(newTalk);
     setCurrentView('edit');
   };
@@ -113,20 +117,27 @@ function App() {
   const submitTalk = async (talk: ToolboxTalk) => {
     setSubmitStatus('Submitting...');
     
+    // Log send attempt
+    logger.logEvent(talk.id, 'send_tapped', { ts: Date.now() });
+    logger.startTimer(`submit_${talk.id}`);
+    
     // Save locally first
     storage.saveTalk(talk);
     storage.saveRecentAttendees(talk.attendees);
     
     try {
       const success = await api.submitTalk(talk);
+      const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       
       if (success) {
+        logger.logEvent(talk.id, 'send_success', { latency_ms: latencyMs });
         setSubmitStatus('✅ Toolbox talk submitted successfully!');
         setTimeout(() => {
           setSubmitStatus('');
           setCurrentView('dashboard');
         }, 2000);
       } else {
+        logger.logEvent(talk.id, 'send_queued_offline');
         setSubmitStatus('📱 Toolbox talk saved offline - will sync when online');
         setTimeout(() => {
           setSubmitStatus('');
@@ -134,6 +145,11 @@ function App() {
         }, 3000);
       }
     } catch (error) {
+      const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
+      logger.logEvent(talk.id, 'send_failed', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        latency_ms: latencyMs
+      });
       setSubmitStatus('📱 Toolbox talk saved offline - will sync when online');
       setTimeout(() => {
         setSubmitStatus('');

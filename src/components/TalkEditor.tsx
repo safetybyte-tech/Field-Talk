@@ -6,6 +6,7 @@ import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
 import { RecipientsSelector } from './RecipientsSelector';
 import { getCachedWeather } from '../utils/weather';
+import { logger } from '../utils/logger';
 
 interface WeatherAlert {
   title: string;
@@ -42,6 +43,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [workDescription, setWorkDescription] = React.useState<string>('');
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const [gptError, setGptError] = React.useState<string>('');
+  const [rollcallStartTime, setRollcallStartTime] = React.useState<number | null>(null);
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
@@ -162,6 +164,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
     setGeneratingContent(true);
     setGptError('');
+    
+    // Start timing the AI generation
+    logger.startTimer(`ai_generation_${editedTalk.id}`);
 
     try {
       // Get the OpenAI API key from environment variables
@@ -217,6 +222,10 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         throw new Error('No content generated from API');
       }
 
+      // Log successful AI generation
+      const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
+      logger.logEvent(editedTalk.id, 'talk_generated', { latency_ms: latencyMs });
+
       // Create a title based on the work description
       const generatedTitle = `Safety Talk: ${workDescription.trim()}`;
       
@@ -231,6 +240,12 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       setWorkDescription('');
       
     } catch (error) {
+      const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
+      logger.logEvent(editedTalk.id, 'send_failed', { 
+        error: error instanceof Error ? error.message : 'AI generation failed',
+        latency_ms: latencyMs,
+        context: 'ai_generation'
+      });
       console.error('Error generating talking points:', error);
       setGptError(error instanceof Error ? error.message : 'Failed to generate content. Please try again.');
     } finally {
@@ -245,6 +260,13 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const loadTemplate = (templateId: string) => {
     const template = TALK_TEMPLATES.find(t => t.id === templateId);
     if (template) {
+      // Log template selection
+      logger.logEvent(editedTalk.id, 'task_selected', { 
+        source: 'template_selection',
+        template_id: templateId,
+        template_title: template.title
+      });
+      
       setSelectedTemplate(templateId);
       setEditedTalk({
         ...editedTalk,
@@ -258,6 +280,23 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   };
 
   const updateAttendees = (attendees: Attendee[]) => {
+    // Log rollcall completion if we have a start time
+    if (rollcallStartTime && attendees.length > 0) {
+      const latencyMs = Date.now() - rollcallStartTime;
+      const presentCount = attendees.filter(a => a.present).length;
+      const absentCount = attendees.filter(a => !a.present).length;
+      const tempCount = attendees.filter(a => a.isTemporary).length;
+      
+      logger.logEvent(editedTalk.id, 'rollcall_completed', {
+        latency_ms: latencyMs,
+        present: presentCount,
+        absent: absentCount,
+        temp: tempCount
+      });
+      
+      setRollcallStartTime(null); // Reset timer
+    }
+    
     setEditedTalk({
       ...editedTalk,
       attendees
@@ -385,6 +424,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             {(editedTalk.title || editedTalk.content) && (
               <button
                 onClick={() => {
+                  // Log AI generation task selection
+                  logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
                   // Scroll to the title and content fields for editing
                   const titleField = document.querySelector('[data-field="title"]');
                   if (titleField) {
@@ -664,6 +705,13 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           </div>
         ) : (
           <div data-field="attendees">
+            {/* Log rollcall opened when component mounts */}
+            {React.useEffect(() => {
+              if (!rollcallStartTime) {
+                logger.logEvent(editedTalk.id, 'rollcall_opened');
+                setRollcallStartTime(Date.now());
+              }
+            }, [])}
             <QuickAttendance
               attendees={editedTalk.attendees}
               onUpdateAttendees={updateAttendees}

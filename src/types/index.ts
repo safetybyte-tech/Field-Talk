@@ -54,3 +54,11 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
 }
+
+export interface LogEvent {
+  id: string;
+  talkId: string;
+  eventName: string;
+  timestamp: number;
+  payload?: Record<string, any>;
+}
