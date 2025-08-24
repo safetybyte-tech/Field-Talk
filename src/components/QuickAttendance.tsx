@@ -6,12 +6,14 @@ interface QuickAttendanceProps {
   attendees: Attendee[];
   onUpdateAttendees: (attendees: Attendee[]) => void;
   recentNames?: string[];
+  onRemoveRecentName?: (name: string) => void;
 }
 
 export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   attendees,
   onUpdateAttendees,
-  recentNames = []
+  recentNames = [],
+  onRemoveRecentName
 }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
 
@@ -83,6 +85,12 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
   const addWorkerFromSearch = (isTemporary: boolean = false) => {
     if (searchTerm.trim() && !isAttendeeAdded(searchTerm.trim())) {
       addNewAttendee(searchTerm.trim(), isTemporary);
+    }
+  };
+
+  const removeFromRecentNames = (name: string) => {
+    if (onRemoveRecentName) {
+      onRemoveRecentName(name);
     }
   };
 
@@ -205,22 +213,31 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
                 >
                   <span className="font-medium text-lg">{name}</span>
                   
-                  <button
-                    onClick={() => toggleAttendance(name)}
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isPresent
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : isAdded
-                        ? 'bg-red-600 border-red-600 text-white'
-                        : 'border-gray-300 hover:border-green-500'
-                    }`}
-                  >
-                    {isPresent ? (
-                      <Check size={20} />
-                    ) : isAdded ? (
-                      <X size={20} />
-                    ) : null}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => removeFromRecentNames(name)}
+                      className="w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-colors"
+                      title="Remove from recent workers"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    <button
+                      onClick={() => toggleAttendance(name)}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isPresent
+                          ? 'bg-green-600 border-green-600 text-white'
+                          : isAdded
+                          ? 'bg-red-600 border-red-600 text-white'
+                          : 'border-gray-300 hover:border-green-500'
+                      }`}
+                    >
+                      {isPresent ? (
+                        <Check size={20} />
+                      ) : isAdded ? (
+                        <X size={20} />
+                      ) : null}
+                    </button>
+                  </div>
                 </div>
               );
             })}
