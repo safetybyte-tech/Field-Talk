@@ -85,5 +85,11 @@ export const storage = {
     } catch {
       return [];
     }
+  },
+
+  removeRecentAttendee: (nameToRemove: string): void => {
+    const currentNames = storage.getRecentAttendees();
+    const updatedNames = currentNames.filter(name => name !== nameToRemove);
+    localStorage.setItem(STORAGE_KEYS.ATTENDEES, JSON.stringify(updatedNames));
   }
 };

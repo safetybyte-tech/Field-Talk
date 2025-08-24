@@ -204,6 +204,7 @@ function App() {
             onSubmit={submitTalk}
             recentNames={recentNames}
             currentUser={user}
+            onRemoveRecentName={removeRecentName}
           />
         </div>
       )}

@@ -666,7 +666,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               attendees={editedTalk.attendees}
               onUpdateAttendees={updateAttendees}
               recentNames={recentNames}
-            />
+              onRemoveRecentName={onRemoveRecentName}
           </div>
         )}
       </div>
