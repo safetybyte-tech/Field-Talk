@@ -176,11 +176,18 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           
           <div className="flex items-center gap-1">
-            {isOnline ? (
-              <Wifi size={20} className="text-primary-400" />
-            ) : (
-              <WifiOff size={20} className="text-red-400" />
-            )}
+            <div className="relative">
+              {isOnline ? (
+                <Wifi size={20} className="text-green-400" />
+              ) : (
+                <>
+                  <Wifi size={20} className="text-gray-400" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-0.5 bg-red-500 rotate-45 rounded-full"></div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
