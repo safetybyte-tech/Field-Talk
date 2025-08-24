@@ -213,6 +213,39 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       return;
     }
 
+    // Check for vague prompts before making API call
+    const trimmedDescription = workDescription.trim();
+    const vaguenessChecks = {
+      tooShort: trimmedDescription.length < 20,
+      tooGeneric: /^(work|job|task|construction|building|project)$/i.test(trimmedDescription),
+      onlyCommonWords: /^(doing|some|general|basic|normal|regular|standard)\s*(work|job|task|construction|building|project)?$/i.test(trimmedDescription)
+    };
+
+    // Determine if prompt is vague and why
+    let vaguenessReason = null;
+    if (vaguenessChecks.tooShort) {
+      vaguenessReason = 'too_short';
+    } else if (vaguenessChecks.tooGeneric) {
+      vaguenessReason = 'too_generic';
+    } else if (vaguenessChecks.onlyCommonWords) {
+      vaguenessReason = 'only_common_words';
+    }
+
+    if (vaguenessReason) {
+      // Log the vague prompt detection
+      logger.logEvent(editedTalk.id, 'vague_prompt_detected', {
+        prompt: trimmedDescription,
+        reason: vaguenessReason,
+        prompt_length: trimmedDescription.length
+      });
+
+      // Set error message to guide user
+      setGptError(
+        'Please provide more specific details about the work. For example: "Installing electrical conduit on 3rd floor", "Concrete pour for foundation", or "Roofing installation with safety harnesses". Include specific tasks, locations, equipment, or materials involved.'
+      );
+      return;
+    }
+
     setGeneratingContent(true);
     setGptError('');
     
