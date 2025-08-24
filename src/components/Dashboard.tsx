@@ -105,11 +105,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="text-sm text-secondary-600">Today</div>
         </div>
         
-        <div className="bg-primary-100 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-primary-700">{thisWeekTalks.length}</div>
-          <div className="text-sm text-secondary-600">This Week</div>
-        </div>
-        
         <div className={`p-4 rounded-lg ${
           thisWeekTalks.length > 1 ? 'bg-green-50' : 'bg-primary-100'
         }`}>
