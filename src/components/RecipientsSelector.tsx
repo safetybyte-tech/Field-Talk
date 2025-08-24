@@ -150,19 +150,19 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={selectDefaults}
-          className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
+          className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm hover:bg-primary-200 transition-colors"
         >
           Select Defaults
         </button>
         <button
           onClick={selectAll}
-          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-colors"
+          className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-sm hover:bg-secondary-200 transition-colors"
         >
           Select All
         </button>
         <button
           onClick={selectNone}
-          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+          className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-sm hover:bg-secondary-200 transition-colors"
         >
           Select None
         </button>
@@ -171,34 +171,34 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
       {/* Search Bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search recipients by name or company..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-lg"
+            className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {/* Add New Recipient Form */}
       {showAddForm && (
-        <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+        <div className="bg-secondary-50 p-4 rounded-lg space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
               type="text"
               value={newRecipient.name}
               onChange={(e) => setNewRecipient({...newRecipient, name: e.target.value})}
               placeholder="Recipient name"
-              className="p-3 border border-gray-300 rounded-lg"
+              className="p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <input
               type="email"
               value={newRecipient.email}
               onChange={(e) => setNewRecipient({...newRecipient, email: e.target.value})}
               placeholder="email@company.com"
-              className="p-3 border border-gray-300 rounded-lg"
+              className="p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           
@@ -208,7 +208,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
               value={newRecipient.company}
               onChange={(e) => setNewRecipient({...newRecipient, company: e.target.value})}
               placeholder="Company name (optional)"
-              className="w-full p-3 border border-gray-300 rounded-lg"
+              className="w-full p-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           
@@ -220,7 +220,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
               onChange={(e) => setNewRecipient({...newRecipient, isDefault: e.target.checked})}
               className="w-4 h-4 text-blue-600 rounded"
             />
-            <label htmlFor="isDefault" className="text-sm text-gray-700">
+            <label htmlFor="isDefault" className="text-sm text-secondary-700">
               Auto-select for new talks
             </label>
           </div>
@@ -229,13 +229,13 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
             <button
               onClick={addRecipient}
               disabled={!newRecipient.name.trim() || !newRecipient.email.trim()}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Add Recipient
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-secondary-500 hover:bg-secondary-600 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -245,14 +245,14 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
 
       {/* Recipients Database */}
       <div>
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="mb-3 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+          <p className="text-sm text-primary-800">
             <strong>Instructions:</strong> Check recipients to include in email distribution
           </p>
         </div>
         
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-secondary-700">
             Recipients ({filteredRecipients.length + (canAddNewRecipient ? 1 : 0)}):
           </p>
           {filteredRecipients.length > 0 && filteredRecipients.length < 5 && (
@@ -267,7 +267,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                 });
                 onUpdateRecipients(updatedRecipients);
               }}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
             >
               <Users size={14} />
               Select All Shown
@@ -276,13 +276,13 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
         </div>
         
         {(filteredRecipients.length > 0 || canAddNewRecipient) ? (
-          <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+          <div className="max-h-80 overflow-y-auto border border-secondary-200 rounded-lg">
             {/* Add New Recipient Option */}
             {canAddNewRecipient && (
-              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-blue-50">
+              <div className="flex items-center justify-between p-4 border-b border-secondary-100 bg-primary-50">
                 <div className="flex items-center gap-2 flex-1">
-                  <Plus size={16} className="text-blue-600" />
-                  <span className="font-medium text-lg text-blue-700">
+                  <Plus size={16} className="text-primary-600" />
+                  <span className="font-medium text-lg text-primary-700">
                     Add "{searchTerm}"
                   </span>
                 </div>
@@ -299,7 +299,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                       onUpdateRecipients([...recipients, recipient]);
                       setSearchTerm('');
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                    className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                   >
                     <Plus size={14} />
                     Add
@@ -315,7 +315,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                 className={`flex items-center justify-between p-4 ${
                   canAddNewRecipient || index < filteredRecipients.length - 1 ? 'border-b border-gray-100' : ''
                 } transition-colors ${
-                  recipient.selected ? 'bg-blue-50' : 'bg-white hover:bg-gray-50'
+                  recipient.selected ? 'bg-primary-50' : 'bg-white hover:bg-secondary-50'
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
@@ -326,7 +326,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                         <Star size={16} className="text-yellow-500 fill-current" />
                       )}
                     </div>
-                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                    <div className="text-sm text-secondary-600 flex items-center gap-1">
                       <Mail size={14} />
                       {recipient.email}
                     </div>
@@ -336,7 +336,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => toggleDefault(recipient.id)}
-                    className="w-6 h-6 rounded-full bg-gray-100 hover:bg-yellow-200 text-gray-600 hover:text-yellow-600 flex items-center justify-center transition-colors"
+                    className="w-6 h-6 rounded-full bg-secondary-100 hover:bg-yellow-200 text-secondary-600 hover:text-yellow-600 flex items-center justify-center transition-colors"
                     title={recipient.isDefault ? 'Remove from auto-select' : 'Add to auto-select'}
                   >
                     {recipient.isDefault ? <Star size={12} className="fill-current text-yellow-600" /> : <StarOff size={12} />}
@@ -353,7 +353,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                       // Remove the existing recipient so it can be re-added with edits
                       removeRecipient(recipient.id);
                     }}
-                    className="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 flex items-center justify-center transition-colors"
+                    className="w-6 h-6 rounded-full bg-primary-100 hover:bg-primary-200 text-primary-600 flex items-center justify-center transition-colors"
                     title="Edit recipient"
                   >
                     <Edit size={12} />
@@ -369,8 +369,8 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                     onClick={() => toggleRecipient(recipient.id)}
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       recipient.selected
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-gray-300 hover:border-blue-500'
+                        ? 'bg-primary-600 border-primary-600 text-white'
+                        : 'border-secondary-300 hover:border-primary-500'
                     }`}
                     title={recipient.selected ? 'Remove from email list' : 'Add to email list'}
                   >
@@ -381,15 +381,15 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
+          <div className="text-center py-8 text-secondary-500 border border-secondary-200 rounded-lg">
             {searchTerm ? (
               <>
-                <Search className="mx-auto mb-2 text-gray-300" size={32} />
+                <Search className="mx-auto mb-2 text-secondary-300" size={32} />
                 <p>No recipients found matching "{searchTerm}"</p>
               </>
             ) : (
               <>
-                <Users className="mx-auto mb-2 text-gray-300" size={32} />
+                <Users className="mx-auto mb-2 text-secondary-300" size={32} />
                 <p>No recipients found</p>
                 <p className="text-sm">Add recipients using the + button above</p>
               </>
