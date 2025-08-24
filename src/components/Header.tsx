@@ -9,6 +9,7 @@ interface HeaderProps {
   showQueue?: boolean;
   user?: UserType | null;
   onLogout?: () => void;
+  onEditProfile?: () => void;
   onShowOutbox?: () => void;
   talks?: any[];
   showTimer?: boolean;
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   showQueue = true, 
   user, 
   onLogout,
+  onEditProfile,
   onShowOutbox,
   talks = [],
   showTimer = false,
@@ -129,11 +131,21 @@ export const Header: React.FC<HeaderProps> = ({
               
               {showUserMenu && (
                 <div className="absolute right-0 top-full mt-2 bg-white text-secondary-900 rounded-lg shadow-lg border min-w-48 z-50">
-                  <div className="p-3 border-b">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      // Navigate to profile editing - we'll pass this up to the parent
+                      if (onEditProfile) {
+                        onEditProfile();
+                      }
+                    }}
+                    className="w-full text-left p-3 border-b hover:bg-secondary-50 transition-colors"
+                  >
                     <p className="font-medium">{user.name}</p>
                     <p className="text-sm text-secondary-600">@{user.username}</p>
                     <p className="text-xs text-secondary-500">{user.email}</p>
-                  </div>
+                    <p className="text-xs text-primary-600 mt-1">Click to edit profile</p>
+                  </button>
                   {onLogout && (
                     <button
                       onClick={() => {

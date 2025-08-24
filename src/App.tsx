@@ -4,13 +4,14 @@ import { Dashboard } from './components/Dashboard';
 import { TalkEditor } from './components/TalkEditor';
 import { Outbox } from './components/Outbox';
 import { LandingPage } from './components/LandingPage';
+import { UserProfile } from './components/UserProfile';
 import { ToolboxTalk, User } from './types';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
 import { logger } from './utils/logger';
 
-type ViewType = 'dashboard' | 'edit' | 'outbox';
+type ViewType = 'dashboard' | 'edit' | 'outbox' | 'profile';
 
 function App() {
   const [user, setUser] = React.useState<User | null>(null);
@@ -178,6 +179,15 @@ function App() {
     setCurrentTalk(null);
   };
 
+  const showProfile = () => {
+    setCurrentView('profile');
+    setCurrentTalk(null);
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   // Show landing page if not authenticated
   if (!isAuthenticated) {
     return <LandingPage onLogin={handleLogin} />;
@@ -189,12 +199,14 @@ function App() {
         title={
           currentView === 'dashboard' ? 'Field Talk' : 
           currentView === 'edit' ? 'Tool Box Talk Record' : 
-          'Outbox'
+          currentView === 'outbox' ? 'Outbox' :
+          'User Profile'
         }
         showQueue={currentView === 'dashboard'}
         showTimer={currentView === 'edit'}
         user={user}
         onLogout={handleLogout}
+        onEditProfile={showProfile}
         onShowOutbox={showOutbox}
         talks={talks}
         onTitleClick={currentView === 'edit' ? saveAndGoToDashboard : undefined}
@@ -220,6 +232,14 @@ function App() {
           onBack={goToDashboard}
           onDeleteTalk={deleteTalk}
           onEditTalk={editTalk}
+        />
+      )}
+      
+      {currentView === 'profile' && user && (
+        <UserProfile
+          user={user}
+          onBack={goToDashboard}
+          onUpdateUser={updateUser}
         />
       )}
       
