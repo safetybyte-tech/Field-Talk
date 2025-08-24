@@ -319,13 +319,6 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
-                  <input
-                    type="checkbox"
-                    checked={recipient.selected}
-                    onChange={() => toggleRecipient(recipient.id)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                  
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-lg">{recipient.name}</span>
@@ -371,6 +364,17 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                     title="Remove recipient"
                   >
                     <Trash2 size={12} />
+                  </button>
+                  <button
+                    onClick={() => toggleRecipient(recipient.id)}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                      recipient.selected
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'border-gray-300 hover:border-blue-500'
+                    }`}
+                    title={recipient.selected ? 'Remove from email list' : 'Add to email list'}
+                  >
+                    {recipient.selected && <Check size={12} />}
                   </button>
                 </div>
               </div>
