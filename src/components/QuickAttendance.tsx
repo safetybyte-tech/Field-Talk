@@ -122,9 +122,34 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
 
       {/* Scrollable Worker Database */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">
-          Recent Workers ({filteredNames.length + (canAddNewWorker ? 1 : 0)}):
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-gray-700">
+            Recent Workers ({filteredNames.length + (canAddNewWorker ? 1 : 0)}):
+          </p>
+          {filteredNames.length > 0 && filteredNames.length < 5 && (
+            <button
+              onClick={() => {
+                // Add all filtered workers as present
+                const newAttendees = filteredNames
+                  .filter(name => !isAttendeeAdded(name))
+                  .map(name => ({
+                    id: `attendee_${Date.now()}_${Math.random()}`,
+                    name: name,
+                    present: true,
+                    isTemporary: false
+                  }));
+                
+                if (newAttendees.length > 0) {
+                  onUpdateAttendees([...attendees, ...newAttendees]);
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+            >
+              <Users size={14} />
+              Add All Workers
+            </button>
+          )}
+        </div>
         
         {(filteredNames.length > 0 || canAddNewWorker) ? (
           <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
