@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Users, Plus, Trash2, Star, StarOff, Search, Edit } from 'lucide-react';
+import { Mail, Users, Plus, Trash2, Star, StarOff, Search, Edit, Check } from 'lucide-react';
 import { Recipient } from '../types';
 
 interface RecipientsSelectorProps {
