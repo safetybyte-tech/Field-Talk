@@ -25,6 +25,11 @@ function App() {
     setRecentNames(storage.getRecentAttendees());
   };
 
+  const deleteTalk = (id: string) => {
+    storage.deleteTalk(id);
+    setTalks(storage.getTalks());
+  };
+
   // Check for existing user session on mount
   React.useEffect(() => {
     const currentUser = auth.getCurrentUser();
@@ -189,6 +194,7 @@ function App() {
         <Outbox
           talks={talks}
           onBack={goToDashboard}
+          onDeleteTalk={deleteTalk}
         />
       )}
       

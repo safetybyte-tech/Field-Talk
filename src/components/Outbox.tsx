@@ -7,6 +7,7 @@ import { api } from '../utils/api';
 interface OutboxProps {
   talks: ToolboxTalk[];
   onBack: () => void;
+  onDeleteTalk: (id: string) => void;
 }
 
 export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
@@ -42,6 +43,12 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
   const removeFromQueue = (id: string) => {
     storage.removeFromQueue(id);
     setQueuedSubmissions(storage.getQueue());
+  };
+
+  const deleteTalk = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this toolbox talk? This action cannot be undone.')) {
+      onDeleteTalk(id);
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -210,6 +217,16 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
                       <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
                         📝 Draft
                       </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTalk(talk.id);
+                        }}
+                        className="ml-2 p-1 text-gray-500 hover:text-red-600 transition-colors"
+                        title="Delete this toolbox talk"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -60,6 +60,11 @@ export const storage = {
     localStorage.setItem(STORAGE_KEYS.QUEUE, JSON.stringify(queue));
   },
 
+  deleteTalk: (id: string): void => {
+    const talks = storage.getTalks().filter(t => t.id !== id);
+    localStorage.setItem(STORAGE_KEYS.TALKS, JSON.stringify(talks));
+  },
+
   // Recent Attendees
   saveRecentAttendees: (attendees: Attendee[]): void => {
     const currentNames = storage.getRecentAttendees();
