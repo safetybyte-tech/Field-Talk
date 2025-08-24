@@ -124,7 +124,7 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
       <div>
         <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Instructions:</strong> Tap once to mark present, tap again to mark not present
+            <strong>Instructions:</strong> Tap once to mark present, tap again to mark absent
           </p>
         </div>
         
