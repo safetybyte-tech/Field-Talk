@@ -25,6 +25,35 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const [success, setSuccess] = React.useState('');
   const [loading, setLoading] = React.useState(false);
 
+  // Common construction trades
+  const trades = [
+    'General Contractor',
+    'Carpenter',
+    'Electrician',
+    'Plumber',
+    'HVAC Technician',
+    'Roofer',
+    'Mason/Bricklayer',
+    'Concrete Worker',
+    'Painter',
+    'Flooring Installer',
+    'Drywall Installer',
+    'Insulation Worker',
+    'Glazier',
+    'Heavy Equipment Operator',
+    'Crane Operator',
+    'Welder',
+    'Ironworker',
+    'Sheet Metal Worker',
+    'Tile Setter',
+    'Landscaper',
+    'Site Supervisor',
+    'Safety Manager',
+    'Project Manager',
+    'Foreman',
+    'Laborer',
+    'Other'
+  ];
   const handleSaveProfile = async () => {
     setError('');
     setSuccess('');
@@ -96,6 +125,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     editedUser.name !== user.name ||
     editedUser.username !== user.username ||
     editedUser.email !== user.email ||
+    editedUser.trade !== user.trade ||
     newPassword.length > 0;
 
   return (
@@ -211,6 +241,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trade/Role
+              </label>
+              <select
+                value={editedUser.trade || ''}
+                onChange={(e) => setEditedUser({...editedUser, trade: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Select your trade or role</option>
+                {trades.map((trade) => (
+                  <option key={trade} value={trade}>
+                    {trade}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 New Password

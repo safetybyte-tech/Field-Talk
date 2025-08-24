@@ -47,6 +47,7 @@ export interface User {
   email: string;
   username: string;
   name: string;
+  trade?: string;
   createdAt: number;
 }
 
