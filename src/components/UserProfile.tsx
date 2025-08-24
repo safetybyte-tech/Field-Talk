@@ -111,8 +111,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       setNewPassword('');
       setConfirmPassword('');
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
+      // Show success message briefly then redirect to dashboard
+      setTimeout(() => {
+        setSuccess('');
+        onBack(); // Navigate back to dashboard
+      }, 1500);
 
     } catch (err) {
       setError('Failed to update profile. Please try again.');
