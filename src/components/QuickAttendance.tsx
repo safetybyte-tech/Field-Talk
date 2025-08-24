@@ -122,6 +122,12 @@ export const QuickAttendance: React.FC<QuickAttendanceProps> = ({
 
       {/* Scrollable Worker Database */}
       <div>
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Instructions:</strong> Tap once to mark present, tap again to mark not present
+          </p>
+        </div>
+        
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-gray-700">
             Recent Workers ({filteredNames.length + (canAddNewWorker ? 1 : 0)}):
