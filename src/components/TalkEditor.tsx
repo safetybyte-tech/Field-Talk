@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail } from 'lucide-react';
+import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
@@ -33,6 +33,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   onRemoveRecentName
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
+  const [locationSearch, setLocationSearch] = React.useState('');
+  const [showLocationDropdown, setShowLocationDropdown] = React.useState(false);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
   const [weatherAlerts, setWeatherAlerts] = React.useState<WeatherAlert[]>([]);
   const [weatherError, setWeatherError] = React.useState<string>('');
@@ -44,6 +46,36 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const [gptError, setGptError] = React.useState<string>('');
   const [rollcallStartTime, setRollcallStartTime] = React.useState<number | null>(null);
+
+  // Common construction site locations for suggestions
+  const commonLocations = [
+    'Main Office Building',
+    'Construction Site A',
+    'Construction Site B', 
+    'Warehouse',
+    'Equipment Yard',
+    'Parking Structure',
+    'Building 1 - Ground Floor',
+    'Building 1 - 2nd Floor',
+    'Building 1 - 3rd Floor',
+    'Building 2 - Ground Floor',
+    'Building 2 - 2nd Floor',
+    'Mechanical Room',
+    'Electrical Room',
+    'Loading Dock',
+    'Site Trailer',
+    'Safety Office'
+  ];
+
+  // Filter locations based on search term
+  const filteredLocations = commonLocations.filter(location =>
+    location.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+
+  // Initialize location search with current location value
+  React.useEffect(() => {
+    setLocationSearch(editedTalk.location);
+  }, [editedTalk.location]);
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
@@ -86,6 +118,25 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       setWeatherError('Unable to get current weather. Please enter manually or try again.');
     } finally {
       setLoadingWeather(false);
+    }
+  };
+
+  const handleLocationSelect = (location: string) => {
+    setEditedTalk({...editedTalk, location});
+    setLocationSearch(location);
+    setShowLocationDropdown(false);
+  };
+
+  const handleLocationInputChange = (value: string) => {
+    setLocationSearch(value);
+    setEditedTalk({...editedTalk, location: value});
+    setShowLocationDropdown(value.length > 0);
+  };
+
+  const handleLocationKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && locationSearch.trim()) {
+      setEditedTalk({...editedTalk, location: locationSearch.trim()});
+      setShowLocationDropdown(false);
     }
   };
 
@@ -492,25 +543,85 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           />
         </div>
         
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Location *
           </label>
-          <input
-            data-field="location"
-            type="text"
-            disabled={isSubmitted}
-            value={editedTalk.location}
-            onChange={(e) => setEditedTalk({...editedTalk, location: e.target.value})}
-            placeholder="Job site/location"
-            className={`w-full p-3 border rounded-lg text-lg ${
-              isSubmitted 
-                ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
-                : showValidation && validationErrors.includes('location')
-                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
-                : 'border-gray-300'
-            }`}
-          />
+          <div className="relative">
+            <input
+              data-field="location"
+              type="text"
+              disabled={isSubmitted}
+              value={locationSearch}
+              onChange={(e) => handleLocationInputChange(e.target.value)}
+              onKeyPress={handleLocationKeyPress}
+              onFocus={() => setShowLocationDropdown(locationSearch.length > 0)}
+              onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
+              placeholder="Search locations or type new location..."
+              className={`w-full p-3 border rounded-lg text-lg ${
+                isSubmitted 
+                  ? 'bg-gray-100 text-gray-700 cursor-not-allowed'
+                  : showValidation && validationErrors.includes('location')
+                  ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                  : 'border-gray-300'
+              }`}
+            />
+            
+            {/* Dropdown for location suggestions */}
+            {!isSubmitted && showLocationDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {/* Show filtered suggestions */}
+                {filteredLocations.length > 0 && (
+                  <>
+                    {filteredLocations.slice(0, 8).map((location, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleLocationSelect(location)}
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <span className="font-medium">{location}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                
+                {/* Show "Add new location" option if search doesn't match exactly */}
+                {locationSearch.trim() && 
+                 !filteredLocations.some(loc => loc.toLowerCase() === locationSearch.toLowerCase()) && (
+                  <button
+                    type="button"
+                    onClick={() => handleLocationSelect(locationSearch.trim())}
+                    className="w-full text-left px-4 py-3 hover:bg-green-50 border-b border-gray-100 bg-green-25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Plus size={16} className="text-green-600" />
+                      <span className="font-medium text-green-700">
+                        Add "{locationSearch.trim()}"
+                      </span>
+                    </div>
+                  </button>
+                )}
+                
+                {/* Show message if no results */}
+                {filteredLocations.length === 0 && locationSearch.trim() && (
+                  <div className="px-4 py-3 text-gray-500 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Search size={16} />
+                      <span>No matching locations found</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleLocationSelect(locationSearch.trim())}
+                      className="text-green-600 hover:text-green-700 font-medium"
+                    >
+                      Add "{locationSearch.trim()}" as new location
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
