@@ -20,6 +20,7 @@ interface TalkEditorProps {
   onSubmit: (talk: ToolboxTalk) => void;
   recentNames: string[];
   currentUser?: { name: string } | null;
+  onRemoveRecentName: (name: string) => void;
 }
 
 export const TalkEditor: React.FC<TalkEditorProps> = ({
@@ -27,7 +28,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   onSave,
   onSubmit,
   recentNames,
-  currentUser
+  currentUser,
+  onRemoveRecentName
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [loadingWeather, setLoadingWeather] = React.useState(false);
@@ -667,6 +669,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               onUpdateAttendees={updateAttendees}
               recentNames={recentNames}
               onRemoveRecentName={onRemoveRecentName}
+            />
           </div>
         )}
       </div>
