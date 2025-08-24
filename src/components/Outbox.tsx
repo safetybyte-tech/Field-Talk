@@ -10,7 +10,7 @@ interface OutboxProps {
   onDeleteTalk: (id: string) => void;
 }
 
-export const Outbox: React.FC<OutboxProps> = ({ talks, onBack }) => {
+export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk }) => {
   const [queuedSubmissions, setQueuedSubmissions] = React.useState<QueuedSubmission[]>([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
