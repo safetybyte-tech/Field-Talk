@@ -46,6 +46,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const [gptError, setGptError] = React.useState<string>('');
   const [rollcallStartTime, setRollcallStartTime] = React.useState<number | null>(null);
+  const [hasUsedAI, setHasUsedAI] = React.useState(false);
 
   // Common construction site locations for suggestions
   const commonLocations = [
@@ -330,6 +331,9 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         content: generatedContent
       });
       
+      // Mark that AI has been used
+      setHasUsedAI(true);
+      
       // Clear the work description after successful generation
       setWorkDescription('');
       
@@ -542,25 +546,27 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         </div>
         
         {/* Pre-made Templates */}
-        <div>
-          <h4 className="font-medium text-secondary-700 mb-3">Or choose a pre-made template:</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {TALK_TEMPLATES.map((template) => (
-            <button
-              key={template.id}
-              onClick={() => loadTemplate(template.id)}
-              className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
-                selectedTemplate === template.id
-                  ? 'bg-primary-100 border-primary-500 ring-2 ring-primary-300 shadow-md transform scale-105'
-                  : 'bg-secondary-50 border-secondary-200 hover:bg-secondary-100 hover:border-secondary-300'
-              }`}
-            >
-              <div className="font-medium">{template.title}</div>
-              <div className="text-sm text-secondary-600">{template.category}</div>
-            </button>
-          ))}
-        </div>
-        </div>
+        {!hasUsedAI && (
+          <div>
+            <h4 className="font-medium text-secondary-700 mb-3">Or choose a pre-made template:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {TALK_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => loadTemplate(template.id)}
+                  className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
+                    selectedTemplate === template.id
+                      ? 'bg-primary-100 border-primary-500 ring-2 ring-primary-300 shadow-md transform scale-105'
+                      : 'bg-secondary-50 border-secondary-200 hover:bg-secondary-100 hover:border-secondary-300'
+                  }`}
+                >
+                  <div className="font-medium">{template.title}</div>
+                  <div className="text-sm text-secondary-600">{template.category}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       )}
 
