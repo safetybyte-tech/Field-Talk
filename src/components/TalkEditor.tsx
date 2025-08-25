@@ -271,7 +271,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           messages: [
             {
               role: 'system',
-              content: `You are a construction safety expert who creates toolbox talks. Generate comprehensive safety content for construction workers based on the specific work being performed. Focus on:
+              content: `You are a construction safety expert who creates toolbox talks for ${currentUser?.trade || 'construction workers'}. Generate comprehensive safety content based on the specific work being performed. Focus on:
               
               1. Specific hazards related to the work described
               2. Required PPE for this type of work
@@ -280,11 +280,11 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               5. Emergency procedures relevant to the work
               6. Key discussion questions to engage workers
               
-              Format the response as a complete toolbox talk with clear sections and bullet points. Make it practical and actionable for field supervisors.`
+              Format the response as a complete toolbox talk with clear sections and bullet points. Make it practical and actionable for field supervisors working with ${currentUser?.trade || 'construction workers'}.`
             },
             {
               role: 'user',
-              content: `Create a comprehensive toolbox talk for the following work activity: ${workDescription.trim()}
+              content: `Create a comprehensive toolbox talk for a ${currentUser?.trade || 'construction worker'} performing the following work activity: ${workDescription.trim()}
               
               Include specific safety hazards, required PPE, safe procedures, and 3-5 discussion questions to ask the crew to ensure they understand the safety requirements.`
             }
