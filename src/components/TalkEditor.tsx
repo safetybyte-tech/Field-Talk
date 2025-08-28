@@ -477,79 +477,67 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         </p>
         
         {/* AI-Generated Content Section */}
-        <div className="bg-gradient-to-r from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="text-primary-600" size={20} />
-            <h3 className="font-semibold text-primary-800">AI-Generated Toolbox Talk</h3>
+        {hasUsedAI ? (
+          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="text-green-600" size={20} />
+              <span className="font-semibold">Content Generated Successfully!</span>
+            </div>
+            <p className="text-sm">
+              Your custom safety talk has been generated below. Scroll down to review and edit the content.
+            </p>
           </div>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-1">
-                <Wrench size={16} className="inline mr-1" />
-                What work is being performed today?
-              </label>
-              <textarea
-                value={workDescription}
-                onChange={(e) => {
-                  setWorkDescription(e.target.value);
-                  setGptError(''); // Clear error when user types
-                }}
-                placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
-                className="w-full p-3 border border-secondary-300 rounded-lg text-base resize-none"
-                rows={3}
-              />
+        ) : (
+          <div className="bg-gradient-to-r from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="text-primary-600" size={20} />
+              <h3 className="font-semibold text-primary-800">AI-Generated Toolbox Talk</h3>
             </div>
             
-            {gptError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
-                {gptError}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  <Wrench size={16} className="inline mr-1" />
+                  What work is being performed today?
+                </label>
+                <textarea
+                  value={workDescription}
+                  onChange={(e) => {
+                    setWorkDescription(e.target.value);
+                    setGptError(''); // Clear error when user types
+                  }}
+                  placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
+                  className="w-full p-3 border border-secondary-300 rounded-lg text-base resize-none"
+                  rows={3}
+                />
               </div>
-            )}
-            
-            <button
-              onClick={generateTalkingPoints}
-              disabled={generatingContent || !workDescription.trim()}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-            >
-              {generatingContent ? (
-                <>
-                  <Loader2 size={20} className="animate-spin" />
-                  Generating Safety Content...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={20} />
-                  Generate Custom Safety Talk
-                </>
+              
+              {gptError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                  {gptError}
+                </div>
               )}
-            </button>
-            
-            {(editedTalk.title || editedTalk.content) && (
+              
               <button
-                onClick={() => {
-                  // Log AI generation task selection
-                  logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
-                  // Scroll to the title and content fields for editing
-                  const titleField = document.querySelector('[data-field="title"]');
-                  if (titleField) {
-                    titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Focus the title field after scrolling
-                    setTimeout(() => {
-                      const titleInput = titleField as HTMLInputElement;
-                      titleInput.focus();
-                      titleInput.select();
-                    }, 500);
-                  }
-                }}
-                className="w-full bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                onClick={generateTalkingPoints}
+                disabled={generatingContent || !workDescription.trim()}
+                className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
               >
-                <Wrench size={20} />
-                Edit Generated Content
+                {generatingContent ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Generating Safety Content...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} />
+                    Generate Custom Safety Talk
+                  </>
+                )}
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Pre-made Templates */}
         {!hasUsedAI && (
@@ -978,16 +966,6 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         <div className="flex flex-col gap-4">
           {hasUsedAI && (editedTalk.title || editedTalk.content) && (
             <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="text-green-600" size={20} />
-                <span className="font-semibold">Content Generated Successfully!</span>
-              </div>
-              <p className="text-sm">
-                Your custom safety talk has been generated below. Scroll down to review and edit the content.
-              </p>
-            </div>
-          )}
-          
           <div className="flex gap-4">
             <button
               onClick={handleSave}
