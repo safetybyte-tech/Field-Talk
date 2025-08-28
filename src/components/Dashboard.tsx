@@ -230,7 +230,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     
                     <div className="ml-4">
                       {talk.submittedAt ? (
-                        <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs font-medium">
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
                           Submitted
                         </span>
                       ) : (
