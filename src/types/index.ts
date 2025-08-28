@@ -48,6 +48,7 @@ export interface User {
   username: string;
   name: string;
   trade?: string;
+  customTrade?: string;
   createdAt: number;
 }
 

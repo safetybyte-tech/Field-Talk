@@ -128,7 +128,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     editedUser.name !== user.name ||
     editedUser.username !== user.username ||
     editedUser.email !== user.email ||
-    editedUser.trade !== user.trade;
+    editedUser.trade !== user.trade ||
+    editedUser.customTrade !== user.customTrade;
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -227,6 +228,22 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                   </option>
                 ))}
               </select>
+              
+              {/* Custom trade input when "Other" is selected */}
+              {editedUser.trade === 'Other' && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Please specify your trade/role
+                  </label>
+                  <input
+                    type="text"
+                    value={editedUser.customTrade || ''}
+                    onChange={(e) => setEditedUser({...editedUser, customTrade: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter your specific trade or role"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
