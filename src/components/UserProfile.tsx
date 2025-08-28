@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Mail, Save, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, Key } from 'lucide-react';
 import { User as UserType } from '../types';
 import { auth } from '../utils/auth';
 
@@ -243,7 +243,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center gap-2 transition-colors"
           >
-            <Lock size={20} />
+            <Key size={20} />
             Change Password
           </button>
         </div>
