@@ -128,8 +128,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     editedUser.name !== user.name ||
     editedUser.username !== user.username ||
     editedUser.email !== user.email ||
-    editedUser.trade !== user.trade ||
-    newPassword.length > 0;
+    editedUser.trade !== user.trade;
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -211,38 +210,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Password Change */}
-        <div className="border-t pt-6">
-          <h2 className="text-lg font-semibold mb-4">Change Password</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Leave blank to keep your current password
-          </p>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Current Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter current password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -261,53 +228,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter new password"
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Confirm new password"
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
           </div>
+        </div>
+
+        {/* Password Change */}
+        <div className="border-t pt-6">
+          <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+          
+          <button
+            onClick={() => {
+              // This would trigger a password change workflow
+              // For now, we'll just show an alert
+              alert('Password change functionality would be implemented here');
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center gap-2 transition-colors"
+          >
+            <Lock size={20} />
+            Change Password
+          </button>
         </div>
 
         {/* Account Info */}
