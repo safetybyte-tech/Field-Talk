@@ -47,6 +47,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [gptError, setGptError] = React.useState<string>('');
   const [rollcallStartTime, setRollcallStartTime] = React.useState<number | null>(null);
   const [hasUsedAI, setHasUsedAI] = React.useState(false);
+  const [isContentEditable, setIsContentEditable] = React.useState(false);
+  const [showEditButton, setShowEditButton] = React.useState(false);
 
   // Common construction site locations for suggestions
   const commonLocations = [
@@ -333,6 +335,10 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
       
       // Mark that AI has been used
       setHasUsedAI(true);
+      
+      // Show the edit button and make content non-editable initially
+      setShowEditButton(true);
+      setIsContentEditable(false);
       
       // Clear the work description after successful generation
       setWorkDescription('');
@@ -778,6 +784,43 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         </div>
       )}
 
+      {/* Edit Generated Content Button - appears above title when AI content is generated */}
+      {showEditButton && hasUsedAI && (editedTalk.title || editedTalk.content) && (
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-blue-800 mb-1">Generated Content Ready</h3>
+              <p className="text-sm text-blue-700">
+                Review the generated content below, then click "Edit Content" to make changes.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                // Log AI generation task selection
+                logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
+                setIsContentEditable(true);
+                setShowEditButton(false);
+                // Scroll to the title field for editing
+                const titleField = document.querySelector('[data-field="title"]');
+                if (titleField) {
+                  titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Focus the title field after scrolling
+                  setTimeout(() => {
+                    const titleInput = titleField as HTMLInputElement;
+                    titleInput.focus();
+                    titleInput.select();
+                  }, 500);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <Wrench size={16} />
+              Edit Content
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-secondary-700 mb-1">
@@ -786,12 +829,12 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         <input
           data-field="title"
           type="text"
-          disabled={isSubmitted}
+          disabled={isSubmitted || (hasUsedAI && !isContentEditable)}
           value={editedTalk.title}
           onChange={(e) => setEditedTalk({...editedTalk, title: e.target.value})}
           placeholder="Today's safety topic"
           className={`w-full p-3 border rounded-lg text-lg font-medium ${
-            isSubmitted 
+            isSubmitted || (hasUsedAI && !isContentEditable)
               ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
               : showValidation && validationErrors.includes('title')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
@@ -808,11 +851,11 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         <textarea
           data-field="content"
           value={editedTalk.content}
-          disabled={isSubmitted}
+          disabled={isSubmitted || (hasUsedAI && !isContentEditable)}
           onChange={(e) => setEditedTalk({...editedTalk, content: e.target.value})}
           placeholder="Enter your toolbox talk content here..."
           className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
-            isSubmitted 
+            isSubmitted || (hasUsedAI && !isContentEditable)
               ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
               : showValidation && validationErrors.includes('content')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
@@ -932,29 +975,17 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
 
       {/* Action Buttons */}
       {!isSubmitted && (
-        <div className="flex gap-3">
-        {saveStatus && (
-          <div className="w-full text-center py-2 mb-2 text-green-700 font-medium">
-            {saveStatus}
+        {hasUsedAI && (editedTalk.title || editedTalk.content) && (
+          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="text-green-600" size={20} />
+              <span className="font-semibold">Content Generated Successfully!</span>
+            </div>
+            <p className="text-sm">
+              Your custom safety talk has been generated below. Scroll down to review and edit the content.
+            </p>
           </div>
         )}
-        <button
-          onClick={handleSave}
-          className="flex-1 bg-secondary-600 hover:bg-secondary-700 disabled:bg-secondary-400 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
-          disabled={saveStatus === 'Saving...'}
-        >
-          <Save size={24} />
-          {saveStatus === 'Saving...' ? 'Saving...' : 'Save Draft'}
-        </button>
-        
-        <button
-          onClick={handleSubmit}
-          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-4 px-6 rounded-lg font-medium text-lg flex items-center justify-center gap-2 transition-colors"
-        >
-          <Send size={24} />
-          Submit Talk
-        </button>
-      </div>
       )}
     </div>
   );
