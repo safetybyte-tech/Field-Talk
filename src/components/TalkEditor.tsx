@@ -975,7 +975,52 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
 
       {/* Action Buttons */}
       {!isSubmitted && (
-        {hasUsedAI && (editedTalk.title || editedTalk.content) && (
+        <div className="flex flex-col gap-4">
+          {hasUsedAI && (editedTalk.title || editedTalk.content) && (
+            <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="text-green-600" size={20} />
+                <span className="font-semibold">Content Generated Successfully!</span>
+              </div>
+              <p className="text-sm">
+                Your custom safety talk has been generated below. Scroll down to review and edit the content.
+              </p>
+            </div>
+          )}
+          
+          <div className="flex gap-4">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            >
+              <Save size={20} />
+              Save Draft
+            </button>
+            
+            <button
+              onClick={handleSubmitAttempt}
+              disabled={!isFormValid}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                isFormValid
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                  : 'bg-secondary-300 text-secondary-500 cursor-not-allowed'
+              }`}
+            >
+              <Send size={20} />
+              Submit Talk
+            </button>
+          </div>
+          
+          {saveStatus && (
+            <div className="text-center text-sm text-primary-600 font-medium">
+              {saveStatus}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
           <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="text-green-600" size={20} />
