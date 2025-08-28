@@ -1021,17 +1021,3 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
     </div>
   );
 };
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="text-green-600" size={20} />
-              <span className="font-semibold">Content Generated Successfully!</span>
-            </div>
-            <p className="text-sm">
-              Your custom safety talk has been generated below. Scroll down to review and edit the content.
-            </p>
-          </div>
-        )}
-      )}
-    </div>
-  );
-};
