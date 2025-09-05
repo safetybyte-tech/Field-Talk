@@ -253,6 +253,7 @@ function App() {
             recentNames={recentNames}
             currentUser={user}
             onRemoveRecentName={removeRecentName}
+            availableDrafts={talks.filter(t => !t.submittedAt && t.id !== currentTalk.id)}
           />
         </div>
       )}
