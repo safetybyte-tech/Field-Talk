@@ -477,6 +477,14 @@ Rules:
         </div>
       )}
 
+      {/* Click outside to close draft selector */}
+      {showDraftSelector && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowDraftSelector(false)}
+        />
+      )}
+
       {/* Submitted Talk Banner */}
       {isSubmitted && (
         <div className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg">
