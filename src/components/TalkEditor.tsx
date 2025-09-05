@@ -458,22 +458,10 @@ Rules:
       {/* Draft Talk Banner */}
       {!isSubmitted && (
         <div 
-          className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors"
-          onClick={() => {
-            // Scroll to the title field for editing
-            const titleField = document.querySelector('[data-field="title"]');
-            if (titleField) {
-              titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              // Focus the title field after scrolling
-              setTimeout(() => {
-                const titleInput = titleField as HTMLInputElement;
-                titleInput.focus();
-              }, 500);
-            }
-          }}
+          className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold">📝 Draft Toolbox Talk - Click to edit</span>
+            <span className="font-semibold">📝 Draft Toolbox Talk</span>
           </div>
           <p className="text-sm">
             Started on {new Date(editedTalk.createdAt).toLocaleDateString('en-US', {
