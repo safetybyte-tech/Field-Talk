@@ -812,43 +812,6 @@ Rules:
         </div>
       )}
 
-      {/* Edit Generated Content Button - appears above title when AI content is generated */}
-      {showEditButton && hasUsedAI && (editedTalk.title || editedTalk.content) && (
-        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-blue-800 mb-1">Generated Content Ready</h3>
-              <p className="text-sm text-blue-700">
-                Review the generated content below, then click "Edit Content" to make changes.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                // Log AI generation task selection
-                logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
-                setIsContentEditable(true);
-                setShowEditButton(false);
-                // Scroll to the title field for editing
-                const titleField = document.querySelector('[data-field="title"]');
-                if (titleField) {
-                  titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  // Focus the title field after scrolling
-                  setTimeout(() => {
-                    const titleInput = titleField as HTMLInputElement;
-                    titleInput.focus();
-                    titleInput.select();
-                  }, 500);
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 transition-colors"
-            >
-              <Wrench size={16} />
-              Edit Content
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-secondary-700 mb-1">
@@ -907,6 +870,43 @@ Rules:
           />
         )}
       </div>
+
+      {/* Edit Generated Content Button - appears after content when AI content is generated */}
+      {showEditButton && hasUsedAI && (editedTalk.title || editedTalk.content) && (
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-blue-800 mb-1">Generated Content Ready</h3>
+              <p className="text-sm text-blue-700">
+                Review the generated content above, then click "Edit Content" to make changes.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                // Log AI generation task selection
+                logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
+                setIsContentEditable(true);
+                setShowEditButton(false);
+                // Scroll to the title field for editing
+                const titleField = document.querySelector('[data-field="title"]');
+                if (titleField) {
+                  titleField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Focus the title field after scrolling
+                  setTimeout(() => {
+                    const titleInput = titleField as HTMLInputElement;
+                    titleInput.focus();
+                    titleInput.select();
+                  }, 500);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <Wrench size={16} />
+              Edit Content
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Attendance Section */}
       <div className={`border-t-2 pt-6 ${
