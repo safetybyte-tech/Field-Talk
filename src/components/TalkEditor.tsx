@@ -52,6 +52,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [showEditButton, setShowEditButton] = React.useState(false);
   const [isStructuredContent, setIsStructuredContent] = React.useState(false);
   const [structuredContent, setStructuredContent] = React.useState<StructuredTalkContent | null>(null);
+  const [showDraftSelector, setShowDraftSelector] = React.useState(false);
 
   // Common construction site locations for suggestions
   const commonLocations = [
