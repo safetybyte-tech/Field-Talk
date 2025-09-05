@@ -1019,18 +1019,6 @@ Rules:
       {/* Action Buttons */}
       {!isSubmitted && (
         <div className="flex flex-col gap-4">
-          {hasUsedAI && (editedTalk.title || editedTalk.content) && (
-            <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="text-green-600" size={20} />
-                <span className="font-semibold">AI-Generated Content Ready!</span>
-              </div>
-              <p className="text-sm mb-3">
-                Your custom safety talk has been generated. Review the content above and make any needed edits.
-              </p>
-            </div>
-          )}
-          
           <div className="flex gap-4">
             <button
               onClick={handleSave}
@@ -1042,11 +1030,8 @@ Rules:
             
             <button
               onClick={handleSubmitAttempt}
-              disabled={!isFormValid}
               className={`flex-1 py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                isFormValid
-                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                  : 'bg-secondary-300 text-secondary-500 cursor-not-allowed'
+                'bg-primary-600 hover:bg-primary-700 text-white'
               }`}
             >
               <Send size={20} />
