@@ -23,6 +23,7 @@ interface TalkEditorProps {
   recentNames: string[];
   currentUser?: { name: string } | null;
   onRemoveRecentName: (name: string) => void;
+  availableDrafts: ToolboxTalk[];
 }
 
 export const TalkEditor: React.FC<TalkEditorProps> = ({
@@ -31,7 +32,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   onSubmit,
   recentNames,
   currentUser,
-  onRemoveRecentName
+  onRemoveRecentName,
+  availableDrafts
 }) => {
   const [editedTalk, setEditedTalk] = React.useState<ToolboxTalk>(talk);
   const [locationSearch, setLocationSearch] = React.useState('');
@@ -458,31 +460,134 @@ Rules:
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Draft Talk Banner */}
       {!isSubmitted && (
-        <div 
-          className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold">📝 Draft Toolbox Talk</span>
+        <div className="relative">
+          <div 
+            onClick={() => setShowDraftSelector(!showDraftSelector)}
+            className="bg-primary-50 border-l-4 border-primary-500 text-primary-700 p-4 rounded-lg hover:bg-primary-100 cursor-pointer transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-semibold">📝 Draft Toolbox Talk</span>
+                  {availableDrafts.length > 0 && (
+                    <span className="text-sm bg-primary-200 text-primary-800 px-2 py-1 rounded-full">
+                      {availableDrafts.length} other draft{availableDrafts.length !== 1 ? 's' : ''} available
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm">
+                  Started on {new Date(editedTalk.createdAt).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })} • Not yet completed
+                </p>
+                {availableDrafts.length > 0 && (
+                  <p className="text-xs mt-1 text-primary-600">
+                    Click to switch to a different draft
+                  </p>
+                )}
+              </div>
+              {availableDrafts.length > 0 && (
+                <div className="text-primary-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
-          <p className="text-sm">
-            Started on {new Date(editedTalk.createdAt).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })} • Not yet completed
-          </p>
+          
+          {/* Draft Selector Dropdown */}
+          {showDraftSelector && availableDrafts.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-primary-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+              <div className="p-3 border-b border-primary-100 bg-primary-50">
+                <h3 className="font-semibold text-primary-800">Switch to Different Draft</h3>
+                <p className="text-sm text-primary-600">Click on any draft to continue working on it</p>
+              </div>
+              
+              {availableDrafts.map((draft) => {
+                const draftPresentCount = draft.attendees.filter(a => a.present).length;
+                const draftTotalCount = draft.attendees.length;
+                
+                return (
+                  <div
+                    key={draft.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Save current draft first
+                      onSave(editedTalk);
+                      // Load the selected draft
+                      setEditedTalk(draft);
+                      setShowDraftSelector(false);
+                      
+                      // Check if the draft content is structured
+                      try {
+                        if (draft.content && typeof draft.content === 'string') {
+                          const parsed = JSON.parse(draft.content);
+                          if (parsed && typeof parsed === 'object' && 'i' in parsed && 'h' in parsed) {
+                            setStructuredContent(parsed);
+                            setIsStructuredContent(true);
+                          } else {
+                            setIsStructuredContent(false);
+                            setStructuredContent(null);
+                          }
+                        }
+                      } catch (error) {
+                        setIsStructuredContent(false);
+                        setStructuredContent(null);
+                      }
+                    }}
+                    className="p-4 hover:bg-primary-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">
+                          {draft.title || 'Untitled Draft'}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <span>{draft.date}</span>
+                          {draft.location && <span>{draft.location}</span>}
+                          {draftTotalCount > 0 && (
+                            <span>{draftPresentCount}/{draftTotalCount} attendees</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Created {new Date(draft.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className="ml-4 text-primary-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div className="p-3 border-t border-primary-100 bg-gray-50">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDraftSelector(false);
+                  }}
+                  className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Click outside to close draft selector */}
-      {showDraftSelector && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowDraftSelector(false)}
-        />
       )}
 
       {/* Submitted Talk Banner */}
