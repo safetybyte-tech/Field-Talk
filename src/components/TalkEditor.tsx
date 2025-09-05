@@ -1,10 +1,11 @@
 import React from 'react';
 import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
-import { ToolboxTalk, Attendee } from '../types';
+import { ToolboxTalk, Attendee, StructuredTalkContent } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
 import { RecipientsSelector } from './RecipientsSelector';
+import { StructuredTalkDisplay } from './StructuredTalkDisplay';
 import { getCachedWeather } from '../utils/weather';
 import { logger } from '../utils/logger';
 
@@ -49,6 +50,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [hasUsedAI, setHasUsedAI] = React.useState(false);
   const [isContentEditable, setIsContentEditable] = React.useState(false);
   const [showEditButton, setShowEditButton] = React.useState(false);
+  const [isStructuredContent, setIsStructuredContent] = React.useState(false);
+  const [structuredContent, setStructuredContent] = React.useState<StructuredTalkContent | null>(null);
 
   // Common construction site locations for suggestions
   const commonLocations = [
@@ -108,6 +111,23 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
     autoPopulateWeather();
   }, [editedTalk.weather]);
+
+  // Check if content is structured JSON on component mount
+  React.useEffect(() => {
+    try {
+      if (editedTalk.content && typeof editedTalk.content === 'string') {
+        const parsed = JSON.parse(editedTalk.content);
+        if (parsed && typeof parsed === 'object' && 'i' in parsed && 'h' in parsed) {
+          setStructuredContent(parsed);
+          setIsStructuredContent(true);
+        }
+      }
+    } catch (error) {
+      // Content is not structured JSON, keep as regular text
+      setIsStructuredContent(false);
+      setStructuredContent(null);
+    }
+  }, [editedTalk.content]);
 
   const refreshWeather = async () => {
     setLoadingWeather(true);
@@ -274,35 +294,23 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           messages: [
             {
               role: 'system',
-              content: `You are a construction safety expert tasked with generating a Markdown-formatted toolbox talk script for a construction foreman. The script must be practical, engaging, and strictly aligned with U.S. construction safety standards.
+              content: `You are FieldTalk Formatter. Convert a short task into a compact toolbox talk.
 
-Your output should follow this structure:
+Return ONLY compact JSON with these exact keys:
+{"i":"","h":[],"p":[],"pre":[],"sif":[],"mh":[],"q":[]}
 
-1. **Title**: A short, clear topic title derived from the task (e.g., 'Tile Cutting Safety').
-2. **Introduction**: 1–2 sentences explaining the task and why safety matters. Always connect to relevance and real-world consequences.
-3. **Bullet Points**: Provide 4–6 concise bullet points covering:
-   • Hazard identification (always mention at least one worst-case scenario or life-altering risk, adapting the tone to severity).
-   • Task-specific safe work practices and controls.
-   • SIF-specific controls (fall protection, trench safety, lockout/tagout, etc.) if applicable.
-   • Use plain, direct phrasing suitable for a foreman to speak aloud.
-4. **Discussion Questions**: Include at least one, ideally two open-ended questions that invite worker participation (e.g., 'What hazards do you see in this task that we haven't covered?' or 'Has anyone experienced a near miss while doing this type of work?').
-5. **Visual Aid**: Include placeholder text suggesting what kind of image/diagram could support this talk (e.g., 'Insert diagram of proper ladder setup').
-
-Adjust your tone based on the risk level of the task:
-• **High risk**: Use an urgent, serious tone emphasizing life-saving controls and immediate hazards.
-• **Moderate risk**: Maintain a balanced tone highlighting safety essentials and long-term risks.
-• **Low risk**: Use a calm, routine tone but still stress the potential for serious or long-term injury (e.g., cuts, strains, silica exposure).
-
-If the provided task description is too vague or non-specific (e.g., 'miscellaneous work', 'carpentry'), you must respond with a clarification prompt asking for more detail about the specific task or hazard so you can generate a focused toolbox talk.`
+Rules:
+- i = 1–2 sentences (intro).
+- h/p/pre/sif/mh/q = arrays, max 4 items each.
+- Each item ≤ 12 words, action-oriented.
+- No citations, no extra keys, no markdown, no explanations.`
             },
             {
               role: 'user',
-              content: `Create a comprehensive toolbox talk for a ${currentUser?.trade || 'construction worker'} performing the following work activity: ${workDescription.trim()}
-              
-              Include specific safety hazards, required PPE, safe procedures, and 3-5 discussion questions to ask the crew to ensure they understand the safety requirements.`
+              content: `The task is ${workDescription.trim()}`
             }
           ],
-          max_tokens: 1500,
+          max_tokens: 800,
           temperature: 0.7
         })
       });
@@ -319,6 +327,28 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         throw new Error('No content generated from API');
       }
 
+      // Try to parse as JSON
+      let parsedContent: StructuredTalkContent;
+      try {
+        parsedContent = JSON.parse(generatedContent);
+        
+        // Validate the structure
+        if (!parsedContent.i || !Array.isArray(parsedContent.h) || !Array.isArray(parsedContent.p) ||
+            !Array.isArray(parsedContent.pre) || !Array.isArray(parsedContent.sif) ||
+            !Array.isArray(parsedContent.mh) || !Array.isArray(parsedContent.q)) {
+          throw new Error('Invalid JSON structure');
+        }
+        
+        // Set structured content
+        setStructuredContent(parsedContent);
+        setIsStructuredContent(true);
+        
+      } catch (parseError) {
+        // If parsing fails, treat as regular text content
+        setIsStructuredContent(false);
+        setStructuredContent(null);
+      }
+
       // Log successful AI generation
       const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
       logger.logEvent(editedTalk.id, 'talk_generated', { latency_ms: latencyMs });
@@ -330,7 +360,7 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
       setEditedTalk({
         ...editedTalk,
         title: generatedTitle,
-        content: generatedContent
+        content: isStructuredContent ? JSON.stringify(parsedContent) : generatedContent
       });
       
       // Mark that AI has been used
@@ -372,6 +402,8 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
       });
       
       setSelectedTemplate(templateId);
+      setIsStructuredContent(false);
+      setStructuredContent(null);
       setEditedTalk({
         ...editedTalk,
         title: template.title,
@@ -381,6 +413,14 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
       // Clear selection after 2 seconds to show it was applied
       setTimeout(() => setSelectedTemplate(null), 2000);
     }
+  };
+
+  const handleStructuredContentChange = (newContent: StructuredTalkContent) => {
+    setStructuredContent(newContent);
+    setEditedTalk({
+      ...editedTalk,
+      content: JSON.stringify(newContent)
+    });
   };
 
   const updateAttendees = (attendees: Attendee[]) => {
@@ -836,21 +876,36 @@ If the provided task description is too vague or non-specific (e.g., 'miscellane
         <label className="block text-sm font-medium text-secondary-700 mb-1">
           Talk Content *
         </label>
-        <textarea
-          data-field="content"
-          value={editedTalk.content}
-          disabled={isSubmitted || (hasUsedAI && !isContentEditable)}
-          onChange={(e) => setEditedTalk({...editedTalk, content: e.target.value})}
-          placeholder="Enter your toolbox talk content here..."
-          className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
-            isSubmitted || (hasUsedAI && !isContentEditable)
-              ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
-              : showValidation && validationErrors.includes('content')
+        
+        {isStructuredContent && structuredContent ? (
+          <div data-field="content" className={`border rounded-lg ${
+            showValidation && validationErrors.includes('content')
               ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
               : 'border-secondary-300'
-          }`}
-          rows={12}
-        />
+          }`}>
+            <StructuredTalkDisplay
+              content={structuredContent}
+              isEditable={!isSubmitted && (hasUsedAI ? isContentEditable : true)}
+              onContentChange={handleStructuredContentChange}
+            />
+          </div>
+        ) : (
+          <textarea
+            data-field="content"
+            value={editedTalk.content}
+            disabled={isSubmitted || (hasUsedAI && !isContentEditable)}
+            onChange={(e) => setEditedTalk({...editedTalk, content: e.target.value})}
+            placeholder="Enter your toolbox talk content here..."
+            className={`w-full p-4 border rounded-lg text-base leading-relaxed ${
+              isSubmitted || (hasUsedAI && !isContentEditable)
+                ? 'bg-secondary-100 text-secondary-700 cursor-not-allowed'
+                : showValidation && validationErrors.includes('content')
+                ? 'border-red-500 bg-red-50 ring-2 ring-red-200'
+                : 'border-secondary-300'
+            }`}
+            rows={12}
+          />
+        )}
       </div>
 
       {/* Attendance Section */}

@@ -42,6 +42,16 @@ export interface TalkTemplate {
   category: string;
 }
 
+export interface StructuredTalkContent {
+  i: string; // Introduction (1-2 sentences)
+  h: string[]; // Hazards (max 4 items, ≤12 words each)
+  p: string[]; // PPE (max 4 items, ≤12 words each)
+  pre: string[]; // Pre-task planning (max 4 items, ≤12 words each)
+  sif: string[]; // Serious injury/fatality prevention (max 4 items, ≤12 words each)
+  mh: string[]; // Material handling (max 4 items, ≤12 words each)
+  q: string[]; // Questions (max 4 items, ≤12 words each)
+}
+
 export interface User {
   id: string;
   email: string;
