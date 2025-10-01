@@ -4,8 +4,10 @@ export interface ToolboxTalk {
   content: string;
   date: string;
   location: string;
+  projectNumber?: string;
   weather: string;
   supervisor: string;
+  supervisorEmail?: string;
   attendees: Attendee[];
   recipients: Recipient[];
   createdAt: number;
@@ -44,11 +46,11 @@ export interface TalkTemplate {
 
 export interface StructuredTalkContent {
   i: string; // Introduction (1-2 sentences)
-  h: string[]; // Hazards (max 4 items, ≤12 words each)
-  p: string[]; // PPE (max 4 items, ≤12 words each)
-  pre: string[]; // Pre-task planning (max 4 items, ≤12 words each)
+  hazards: string[]; // Hazards (max 4 items, ≤12 words each)
+  practices: string[]; // PPE (max 4 items, ≤12 words each)
+  ppe: string[]; // Pre-task planning (max 4 items, ≤12 words each)
   sif: string[]; // Serious injury/fatality prevention (max 4 items, ≤12 words each)
-  mh: string[]; // Material handling (max 4 items, ≤12 words each)
+  manual: string[]; // Material handling (max 4 items, ≤12 words each)
   q: string[]; // Questions (max 4 items, ≤12 words each)
 }
 
