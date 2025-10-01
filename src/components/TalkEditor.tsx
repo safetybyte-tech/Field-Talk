@@ -88,10 +88,14 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
   // Auto-fill supervisor name from current user
   React.useEffect(() => {
-    if (currentUser && !editedTalk.supervisor) {
-      setEditedTalk(prev => ({ ...prev, supervisor: currentUser.name }));
+    if (currentUser && (!editedTalk.supervisor || !editedTalk.supervisorEmail)) {
+      setEditedTalk(prev => ({ 
+        ...prev, 
+        supervisor: currentUser.name,
+        supervisorEmail: currentUser.email || ''
+      }));
     }
-  }, [currentUser, editedTalk.supervisor]);
+  }, [currentUser, editedTalk.supervisor, editedTalk.supervisorEmail]);
 
   // Auto-populate weather on component mount if weather is empty
   React.useEffect(() => {
@@ -298,14 +302,14 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           messages: [
             {
               role: 'system',
-              content: `You are FieldTalk Formatter. Convert a short task into a compact toolbox talk.
+              content: `You are FieldTalk Formatter. Convert a short task description into a structured toolbox talk.
 
 Return ONLY compact JSON with these exact keys:
-{"i":"","h":[],"p":[],"pre":[],"sif":[],"mh":[],"q":[]}
+{"i":"","hazards":[],"practices":[],"ppe":[],"sif":[],"manual":[],"q":[]}
 
 Rules:
 - i = 1–2 sentences (intro).
-- h/p/pre/sif/mh/q = arrays, max 4 items each.
+- hazards/practices/ppe/sif/manual/q = arrays, max 4 items each.
 - Each item ≤ 12 words, action-oriented.
 - No citations, no extra keys, no markdown, no explanations.`
             },
@@ -337,9 +341,9 @@ Rules:
         parsedContent = JSON.parse(generatedContent);
         
         // Validate the structure
-        if (!parsedContent.i || !Array.isArray(parsedContent.h) || !Array.isArray(parsedContent.p) ||
-            !Array.isArray(parsedContent.pre) || !Array.isArray(parsedContent.sif) ||
-            !Array.isArray(parsedContent.mh) || !Array.isArray(parsedContent.q)) {
+        if (!parsedContent.i || !Array.isArray(parsedContent.hazards) || !Array.isArray(parsedContent.practices) ||
+            !Array.isArray(parsedContent.ppe) || !Array.isArray(parsedContent.sif) ||
+            !Array.isArray(parsedContent.manual) || !Array.isArray(parsedContent.q)) {
           throw new Error('Invalid JSON structure');
         }
         
