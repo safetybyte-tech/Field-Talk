@@ -57,7 +57,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
 
   const sections = [
     {
-      key: 'h' as keyof StructuredTalkContent,
+      key: 'hazards' as keyof StructuredTalkContent,
       title: 'Hazards',
       icon: AlertTriangle,
       color: 'text-red-600',
@@ -65,7 +65,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
       borderColor: 'border-red-200'
     },
     {
-      key: 'p' as keyof StructuredTalkContent,
+      key: 'practices' as keyof StructuredTalkContent,
       title: 'Personal Protective Equipment (PPE)',
       icon: Shield,
       color: 'text-blue-600',
@@ -73,7 +73,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
       borderColor: 'border-blue-200'
     },
     {
-      key: 'pre' as keyof StructuredTalkContent,
+      key: 'ppe' as keyof StructuredTalkContent,
       title: 'Pre-Task Planning',
       icon: CheckCircle,
       color: 'text-green-600',
@@ -89,7 +89,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
       borderColor: 'border-orange-200'
     },
     {
-      key: 'mh' as keyof StructuredTalkContent,
+      key: 'manual' as keyof StructuredTalkContent,
       title: 'Material Handling',
       icon: Wrench,
       color: 'text-purple-600',

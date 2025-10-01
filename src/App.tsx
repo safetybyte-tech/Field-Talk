@@ -76,8 +76,10 @@ function App() {
       content: '',
       date: localDate,
       location: '',
+      projectNumber: '',
       weather: '',
       supervisor: user?.name || '',
+      supervisorEmail: user?.email || '',
       attendees: [],
       recipients: [],
       createdAt: Date.now()

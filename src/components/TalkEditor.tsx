@@ -202,6 +202,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     if (!editedTalk.location.trim()) errors.push('location');
     if (!editedTalk.weather.trim()) errors.push('weather');
     if (!editedTalk.supervisor.trim()) errors.push('supervisor');
+    if (!editedTalk.supervisorEmail?.trim()) errors.push('supervisorEmail');
     if (editedTalk.attendees.length === 0) errors.push('attendees');
     if (editedTalk.recipients.filter(r => r.selected).length === 0) errors.push('recipients');
     
@@ -616,6 +617,7 @@ Rules:
             {validationErrors.includes('location') && <li>Location is required</li>}
             {validationErrors.includes('weather') && <li>Weather is required</li>}
             {validationErrors.includes('supervisor') && <li>Supervisor name is required</li>}
+            {validationErrors.includes('supervisorEmail') && <li>Supervisor email is required</li>}
             {validationErrors.includes('attendees') && <li>At least one attendee is required</li>}
             {validationErrors.includes('recipients') && <li>At least one email recipient must be selected</li>}
           </ul>
