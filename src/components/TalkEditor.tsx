@@ -8,6 +8,8 @@ import { RecipientsSelector } from './RecipientsSelector';
 import { StructuredTalkDisplay } from './StructuredTalkDisplay';
 import { getCachedWeather } from '../utils/weather';
 import { logger } from '../utils/logger';
+import { auth } from '../utils/auth';
+import { User } from '../types';
 
 interface WeatherAlert {
   title: string;
@@ -21,7 +23,7 @@ interface TalkEditorProps {
   onSave: (talk: ToolboxTalk) => void;
   onSubmit: (talk: ToolboxTalk) => void;
   recentNames: string[];
-  currentUser?: { name: string } | null;
+  currentUser?: User | null;
   onRemoveRecentName: (name: string) => void;
   availableDrafts: ToolboxTalk[];
 }
@@ -264,7 +266,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
     if (vaguenessReason) {
       // Log the vague prompt detection
-      logger.logEvent(editedTalk.id, 'vague_prompt_detected', {
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'vague_prompt_detected', {
         prompt: trimmedDescription,
         reason: vaguenessReason,
         prompt_length: trimmedDescription.length
@@ -284,52 +286,35 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     logger.startTimer(`ai_generation_${editedTalk.id}`);
 
     try {
-      // Get the OpenAI API key from environment variables
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      
-      if (!apiKey) {
-        throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
+      const workerUrl = import.meta.env.VITE_WORKER_URL;
+      if (!workerUrl) {
+        throw new Error('Worker URL not configured. Please add VITE_WORKER_URL to your environment variables.');
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const accessToken = await auth.getAccessToken();
+      if (!accessToken) {
+        throw new Error('Not authenticated. Please sign in again.');
+      }
+
+      const response = await fetch(workerUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are FieldTalk Formatter. Convert a short task description into a structured toolbox talk.
-
-Return ONLY compact JSON with these exact keys:
-{"i":"","hazards":[],"practices":[],"ppe":[],"sif":[],"manual":[],"q":[]}
-
-Rules:
-- i = 1–2 sentences (intro).
-- hazards/practices/ppe/sif/manual/q = arrays, max 4 items each.
-- Each item ≤ 12 words, action-oriented.
-- No citations, no extra keys, no markdown, no explanations.`
-            },
-            {
-              role: 'user',
-              content: `The task is ${workDescription.trim()}`
-            }
-          ],
-          max_tokens: 800,
-          temperature: 0.7
-        })
+        body: JSON.stringify({ workDescription: workDescription.trim() }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `API request failed: ${response.status}`);
+        if (response.status === 429) {
+          throw new Error(errorData.error || 'Daily AI generation limit reached. Try again tomorrow.');
+        }
+        throw new Error(errorData.error || `Request failed: ${response.status}`);
       }
 
       const data = await response.json();
-      const generatedContent = data.choices?.[0]?.message?.content;
+      const generatedContent = data.content;
       
       if (!generatedContent) {
         throw new Error('No content generated from API');
@@ -359,7 +344,7 @@ Rules:
 
       // Log successful AI generation
       const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
-      logger.logEvent(editedTalk.id, 'talk_generated', { latency_ms: latencyMs });
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'talk_generated', { latency_ms: latencyMs });
 
       // Create a title based on the work description
       const generatedTitle = `Safety Talk: ${workDescription.trim()}`;
@@ -383,7 +368,7 @@ Rules:
       
     } catch (error) {
       const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
-      logger.logEvent(editedTalk.id, 'send_failed', { 
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'send_failed', { 
         error: error instanceof Error ? error.message : 'AI generation failed',
         latency_ms: latencyMs,
         context: 'ai_generation'
@@ -403,7 +388,7 @@ Rules:
     const template = TALK_TEMPLATES.find(t => t.id === templateId);
     if (template) {
       // Log template selection
-      logger.logEvent(editedTalk.id, 'task_selected', { 
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { 
         source: 'template_selection',
         template_id: templateId,
         template_title: template.title
@@ -439,7 +424,7 @@ Rules:
       const absentCount = attendees.filter(a => !a.present).length;
       const tempCount = attendees.filter(a => a.isTemporary).length;
       
-      logger.logEvent(editedTalk.id, 'rollcall_completed', {
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'rollcall_completed', {
         latency_ms: latencyMs,
         present: presentCount,
         absent: absentCount,
@@ -1006,7 +991,7 @@ Rules:
             <button
               onClick={() => {
                 // Log AI generation task selection
-                logger.logEvent(editedTalk.id, 'task_selected', { source: 'ai_generation' });
+                logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { source: 'ai_generation' });
                 setIsContentEditable(true);
                 setShowEditButton(false);
                 // Scroll to the title field for editing
@@ -1076,7 +1061,7 @@ Rules:
             {/* Log rollcall opened when component mounts */}
             {React.useEffect(() => {
               if (!rollcallStartTime) {
-                logger.logEvent(editedTalk.id, 'rollcall_opened');
+                logger.logEvent(currentUser?.id || '', editedTalk.id, 'rollcall_opened');
                 setRollcallStartTime(Date.now());
               }
             }, [])}

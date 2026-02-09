@@ -1,8 +1,6 @@
 import React from 'react';
-import { Wifi, WifiOff, Clock, LogOut, User, Send } from 'lucide-react';
-import { api } from '../utils/api';
-import { storage } from '../utils/storage';
-import { User as UserType } from '../types';
+import { Wifi, Clock, LogOut, User, Send } from 'lucide-react';
+import { User as UserType, ToolboxTalk } from '../types';
 
 interface HeaderProps {
   title: string;
@@ -11,15 +9,15 @@ interface HeaderProps {
   onLogout?: () => void;
   onEditProfile?: () => void;
   onShowOutbox?: () => void;
-  talks?: any[];
+  talks?: ToolboxTalk[];
   showTimer?: boolean;
   onTitleClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  title, 
-  showQueue = true, 
-  user, 
+export const Header: React.FC<HeaderProps> = ({
+  title,
+  showQueue = true,
+  user,
   onLogout,
   onEditProfile,
   onShowOutbox,
@@ -27,36 +25,25 @@ export const Header: React.FC<HeaderProps> = ({
   showTimer = false,
   onTitleClick
 }) => {
-  const [isOnline, setIsOnline] = React.useState(api.isOnline());
-  const [queueCount, setQueueCount] = React.useState(0);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [elapsedTime, setElapsedTime] = React.useState(0);
+
+  // Outbox count = unsubmitted drafts only (no more queue)
+  const outboxCount = talks.filter(talk => !talk.submittedAt).length;
 
   React.useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  React.useEffect(() => {
-    const updateQueue = () => {
-      const queuedSubmissions = storage.getQueue().length;
-      const unsubmittedTalks = talks.filter(talk => !talk.submittedAt).length;
-      setQueueCount(queuedSubmissions + unsubmittedTalks);
-    };
-    
-    updateQueue();
-    const interval = setInterval(updateQueue, 1000);
-    
-    return () => clearInterval(interval);
-  }, [talks]);
 
   // Timer effect - only runs when showTimer is true
   React.useEffect(() => {
@@ -73,12 +60,6 @@ export const Header: React.FC<HeaderProps> = ({
 
     return () => clearInterval(interval);
   }, [showTimer]);
-
-  React.useEffect(() => {
-    if (isOnline && queueCount > 0) {
-      api.processQueue();
-    }
-  }, [isOnline, queueCount]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -105,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <h1 className="text-xl font-bold">{title}</h1>
         )}
-        
+
         {/* Timer on the right */}
         {showTimer && (
           <div className="ml-auto mr-4">
@@ -117,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         )}
-        
+
         <div className="flex items-center gap-3">
           {user && (
             <div className="relative">
@@ -128,13 +109,12 @@ export const Header: React.FC<HeaderProps> = ({
                 <User size={16} />
                 <span className="text-sm font-medium">{user.name}</span>
               </button>
-              
+
               {showUserMenu && (
                 <div className="absolute right-0 top-full mt-2 bg-white text-secondary-900 rounded-lg shadow-lg border min-w-48 z-50">
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
-                      // Navigate to profile editing - we'll pass this up to the parent
                       if (onEditProfile) {
                         onEditProfile();
                       }
@@ -162,23 +142,19 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           )}
-          
+
           {showQueue && (
             <button
               onClick={onShowOutbox}
               className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors relative ${
-                !isOnline && queueCount > 0
+                outboxCount > 0
                   ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                  : !isOnline
-                  ? 'bg-secondary-600 hover:bg-secondary-500 text-secondary-300'
-                  : queueCount > 0 
-                  ? 'bg-primary-600 hover:bg-primary-700 text-white' 
                   : 'bg-secondary-700 hover:bg-secondary-600 text-secondary-300'
               }`}
-              title={`${queueCount} talks in outbox`}
+              title={`${outboxCount} talks in outbox`}
             >
               <Send size={14} />
-              <span>{queueCount}</span>
+              <span>{outboxCount}</span>
               {!isOnline && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-6 h-0.5 bg-red-500 rotate-45 rounded-full"></div>
@@ -186,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
           )}
-          
+
           <div className="flex items-center gap-1">
             <div className="relative">
               {isOnline ? (

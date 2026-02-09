@@ -1,126 +1,134 @@
+import { supabase } from './supabase';
 import { User } from '../types';
+import type { Session } from '@supabase/supabase-js';
 
-const STORAGE_KEY = 'toolbox_user';
+function sessionToUser(session: Session): User {
+  const meta = session.user.user_metadata;
+  return {
+    id: session.user.id,
+    email: session.user.email ?? '',
+    username: meta?.username ?? session.user.email?.split('@')[0] ?? '',
+    name: meta?.name ?? '',
+    trade: meta?.trade,
+    customTrade: meta?.customTrade,
+    createdAt: new Date(session.user.created_at).getTime(),
+  };
+}
 
 export const auth = {
-  // Get current user
-  getCurrentUser: (): User | null => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
+  /** Get current session user (checks local Supabase session) */
+  getCurrentUser: async (): Promise<User | null> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return null;
+    return sessionToUser(session);
   },
 
-  // Save user session
-  saveUser: (user: User): void => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  },
-
-  // Clear user session
-  logout: (): void => {
-    localStorage.removeItem(STORAGE_KEY);
-  },
-
-  // Simple email validation
-  isValidEmail: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
-
-  // Check if username is available (simple check against stored users)
-  isUsernameAvailable: (username: string): boolean => {
-    const users = auth.getAllUsers();
-    return !users.some(user => user.username.toLowerCase() === username.toLowerCase());
-  },
-
-  // Get all users (for username checking)
-  getAllUsers: (): User[] => {
-    try {
-      const stored = localStorage.getItem('all_users');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  },
-
-  // Save user to users list
-  saveUserToList: (user: User): void => {
-    const users = auth.getAllUsers();
-    const existingIndex = users.findIndex(u => u.email === user.email);
-    
-    if (existingIndex >= 0) {
-      users[existingIndex] = user;
-    } else {
-      users.push(user);
-    }
-    
-    localStorage.setItem('all_users', JSON.stringify(users));
-  },
-
-  // Simple login (email + password check)
-  login: (email: string, password: string): User | null => {
-    const users = auth.getAllUsers();
-    const user = users.find(u => u.email === email);
-    
-    if (user) {
-      // In a real app, you'd hash and compare passwords
-      // For this demo, we'll store a simple hash
-      const storedPassword = localStorage.getItem(`pwd_${user.id}`);
-      if (storedPassword === btoa(password)) {
-        auth.saveUser(user);
-        return user;
-      }
-    }
-    
-    return null;
-  },
-
-  // Reset password for an existing user (by email)
-  resetPassword: (email: string, newPassword: string): boolean => {
-    const users = auth.getAllUsers();
-    const user = users.find(u => u.email === email);
-    if (!user) return false;
-    localStorage.setItem(`pwd_${user.id}`, btoa(newPassword));
-    return true;
-  },
-
-  // Find user by email (used for forgot-password lookup)
-  findUserByEmail: (email: string): User | null => {
-    const users = auth.getAllUsers();
-    return users.find(u => u.email === email) ?? null;
-  },
-
-  // Register new user
-  register: (email: string, username: string, name: string, password: string): User | null => {
-    if (!auth.isValidEmail(email)) {
-      return null;
-    }
-
-    if (!auth.isUsernameAvailable(username)) {
-      return null;
-    }
-
-    const users = auth.getAllUsers();
-    if (users.some(u => u.email === email)) {
-      return null; // Email already exists
-    }
-
-    const newUser: User = {
-      id: `user_${Date.now()}`,
+  /** Register a new user with email + password */
+  register: async (
+    email: string,
+    username: string,
+    name: string,
+    password: string
+  ): Promise<User> => {
+    const { data, error } = await supabase.auth.signUp({
       email,
-      username,
-      name,
-      createdAt: Date.now()
-    };
+      password,
+      options: {
+        data: { username, name },
+      },
+    });
+    if (error) throw error;
+    if (!data.session) {
+      throw new Error(
+        'Registration succeeded but no session returned. Check email confirmation settings.'
+      );
+    }
+    return sessionToUser(data.session);
+  },
 
-    // Save password (base64 encoded for demo - use proper hashing in production)
-    localStorage.setItem(`pwd_${newUser.id}`, btoa(password));
-    
-    auth.saveUserToList(newUser);
-    auth.saveUser(newUser);
-    
-    return newUser;
-  }
+  /** Sign in with email + password */
+  login: async (email: string, password: string): Promise<User> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return sessionToUser(data.session);
+  },
+
+  /** Sign out */
+  logout: async (): Promise<void> => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
+
+  /** Send password reset email */
+  requestPasswordReset: async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  },
+
+  /** Subscribe to auth state changes. Returns unsubscribe function. */
+  onAuthStateChange: (callback: (user: User | null) => void) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      callback(session ? sessionToUser(session) : null);
+    });
+    return subscription.unsubscribe;
+  },
+
+  /** Get the current access token (JWT) for API calls */
+  getAccessToken: async (): Promise<string | null> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  },
+
+  /** Update the user's profile (metadata + profiles table) */
+  updateProfile: async (
+    updates: Partial<Pick<User, 'name' | 'username' | 'trade' | 'customTrade'>>
+  ): Promise<User> => {
+    // Update auth metadata
+    const { data: authData, error: authError } = await supabase.auth.updateUser({
+      data: updates,
+    });
+    if (authError) throw authError;
+
+    // Update profiles table
+    const userId = authData.user.id;
+    const profileUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) profileUpdates.name = updates.name;
+    if (updates.username !== undefined) profileUpdates.username = updates.username;
+    if (updates.trade !== undefined) profileUpdates.trade = updates.trade;
+    if (updates.customTrade !== undefined) {
+      profileUpdates.custom_trade = updates.customTrade;
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('id', userId);
+      if (profileError) throw profileError;
+    }
+
+    const session = (await supabase.auth.getSession()).data.session;
+    if (!session) throw new Error('No session after profile update');
+    return sessionToUser(session);
+  },
+
+  /** Change password */
+  changePassword: async (newPassword: string): Promise<void> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  },
+
+  /** Simple email validation (kept for form-level checks) */
+  isValidEmail: (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  },
 };

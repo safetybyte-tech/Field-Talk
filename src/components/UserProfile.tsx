@@ -15,12 +15,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   onUpdateUser
 }) => {
   const [editedUser, setEditedUser] = React.useState<UserType>(user);
-  const [currentPassword, setCurrentPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
-  const [showNewPassword, setShowNewPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [showPasswordForm, setShowPasswordForm] = React.useState(false);
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -54,80 +51,71 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     'Laborer',
     'Other'
   ];
+
   const handleSaveProfile = async () => {
     setError('');
     setSuccess('');
     setLoading(true);
 
     try {
-      // Validate email format
       if (!auth.isValidEmail(editedUser.email)) {
         setError('Please enter a valid email address');
         return;
       }
 
-      // Check if username is available (if changed)
-      if (editedUser.username !== user.username && !auth.isUsernameAvailable(editedUser.username)) {
-        setError('Username is already taken');
-        return;
-      }
+      const updatedUser = await auth.updateProfile({
+        name: editedUser.name,
+        username: editedUser.username,
+        trade: editedUser.trade,
+        customTrade: editedUser.customTrade,
+      });
 
-      // If password is being changed, validate it
-      if (newPassword || currentPassword) {
-        if (!currentPassword) {
-          setError('Current password is required to change password');
-          return;
-        }
-
-        if (newPassword.length < 6) {
-          setError('New password must be at least 6 characters');
-          return;
-        }
-
-        if (newPassword !== confirmPassword) {
-          setError('New passwords do not match');
-          return;
-        }
-
-        // Verify current password
-        const storedPassword = localStorage.getItem(`pwd_${user.id}`);
-        if (storedPassword !== btoa(currentPassword)) {
-          setError('Current password is incorrect');
-          return;
-        }
-
-        // Update password
-        localStorage.setItem(`pwd_${user.id}`, btoa(newPassword));
-      }
-
-      // Update user data
-      const updatedUser = { ...editedUser };
-      auth.saveUserToList(updatedUser);
-      auth.saveUser(updatedUser);
       onUpdateUser(updatedUser);
-
       setSuccess('Profile updated successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
 
-      // Show success message briefly then redirect to dashboard
       setTimeout(() => {
         setSuccess('');
-        onBack(); // Navigate back to dashboard
+        onBack();
       }, 1500);
-
     } catch (err) {
-      setError('Failed to update profile. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const hasChanges = 
+  const handleChangePassword = async () => {
+    setError('');
+    setSuccess('');
+
+    if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await auth.changePassword(newPassword);
+      setSuccess('Password changed successfully!');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordForm(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to change password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasChanges =
     editedUser.name !== user.name ||
     editedUser.username !== user.username ||
-    editedUser.email !== user.email ||
     editedUser.trade !== user.trade ||
     editedUser.customTrade !== user.customTrade;
 
@@ -168,7 +156,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <User className="text-primary-600" size={20} />
             Profile Information
           </h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -205,11 +193,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <input
                   type="email"
                   value={editedUser.email}
-                  onChange={(e) => setEditedUser({...editedUser, email: e.target.value})}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                   placeholder="your@email.com"
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
 
             <div>
@@ -228,8 +217,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                   </option>
                 ))}
               </select>
-              
-              {/* Custom trade input when "Other" is selected */}
+
               {editedUser.trade === 'Other' && (
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -251,18 +239,60 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         {/* Password Change */}
         <div className="border-t pt-6">
           <h2 className="text-lg font-semibold mb-4">Change Password</h2>
-          
-          <button
-            onClick={() => {
-              // This would trigger a password change workflow
-              // For now, we'll just show an alert
-              alert('Password change functionality would be implemented here');
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center gap-2 transition-colors"
-          >
-            <Key size={20} />
-            Change Password
-          </button>
+
+          {!showPasswordForm ? (
+            <button
+              onClick={() => setShowPasswordForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <Key size={20} />
+              Change Password
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="New password (min 6 characters)"
+                  minLength={6}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Confirm new password"
+                  minLength={6}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleChangePassword}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                >
+                  {loading ? 'Saving...' : 'Update Password'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPasswordForm(false);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Account Info */}
@@ -298,7 +328,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <Save size={20} />
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
-          
+
           <button
             onClick={onBack}
             className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"

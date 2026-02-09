@@ -30,13 +30,6 @@ export interface Recipient {
   isDefault?: boolean;
 }
 
-export interface QueuedSubmission {
-  id: string;
-  talk: ToolboxTalk;
-  timestamp: number;
-  retryCount: number;
-}
-
 export interface TalkTemplate {
   id: string;
   title: string;

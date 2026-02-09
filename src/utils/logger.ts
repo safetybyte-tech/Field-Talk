@@ -1,92 +1,64 @@
-import { LogEvent } from '../types';
-
-const STORAGE_KEY = 'bolt_app_logs';
+import { supabase } from './supabase';
 
 export const logger = {
-  // Log an event for a specific talk
-  logEvent: (talkId: string, eventName: string, payload?: Record<string, any>): void => {
-    const logEvent: LogEvent = {
-      id: `log_${Date.now()}_${Math.random()}`,
-      talkId,
-      eventName,
-      timestamp: Date.now(),
-      payload
-    };
-
-    try {
-      const existingLogs = logger.getAllLogs();
-      const updatedLogs = [...existingLogs, logEvent];
-      
-      // Keep only the last 1000 log events to prevent localStorage bloat
-      const limitedLogs = updatedLogs.slice(-1000);
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(limitedLogs));
-    } catch (error) {
-      console.warn('Failed to save log event:', error);
-    }
+  /** Log an event to the Supabase logs table. Fire-and-forget. */
+  logEvent: (userId: string, talkId: string, eventName: string, payload?: Record<string, unknown>): void => {
+    supabase
+      .from('logs')
+      .insert({
+        user_id: userId,
+        talk_id: talkId || null,
+        event_name: eventName,
+        payload: payload ?? null,
+      })
+      .then(({ error }) => {
+        if (error) console.warn('Failed to log event:', error.message);
+      });
   },
 
-  // Get all log events for a specific talk
-  getLogsForTalk: (talkId: string): LogEvent[] => {
-    try {
-      const allLogs = logger.getAllLogs();
-      return allLogs.filter(log => log.talkId === talkId);
-    } catch {
+  /** Get logs for a specific talk (used before submission). */
+  getLogsForTalk: async (talkId: string) => {
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('talk_id', talkId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.warn('Failed to fetch logs:', error.message);
       return [];
     }
+    return data || [];
   },
 
-  // Get all log events
-  getAllLogs: (): LogEvent[] => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+  /** Clear logs for a talk after submission. */
+  clearLogsForTalk: async (talkId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('logs')
+      .delete()
+      .eq('talk_id', talkId);
+    if (error) console.warn('Failed to clear logs:', error.message);
   },
 
-  // Clear logs for a specific talk (after successful submission)
-  clearLogsForTalk: (talkId: string): void => {
-    try {
-      const allLogs = logger.getAllLogs();
-      const filteredLogs = allLogs.filter(log => log.talkId !== talkId);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredLogs));
-    } catch (error) {
-      console.warn('Failed to clear logs for talk:', error);
-    }
-  },
-
-  // Clear all logs (for development/debugging)
-  clearAllLogs: (): void => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.warn('Failed to clear all logs:', error);
-    }
-  },
-
-  // Helper to start timing an operation
+  /** Timer helpers stay in sessionStorage (ephemeral, per-tab). */
   startTimer: (key: string): void => {
     try {
       sessionStorage.setItem(`timer_${key}`, Date.now().toString());
-    } catch (error) {
-      console.warn('Failed to start timer:', error);
+    } catch {
+      // ignore
     }
   },
 
-  // Helper to get elapsed time since timer started
   getElapsedTime: (key: string): number => {
     try {
       const startTime = sessionStorage.getItem(`timer_${key}`);
       if (startTime) {
         const elapsed = Date.now() - parseInt(startTime, 10);
-        sessionStorage.removeItem(`timer_${key}`); // Clean up
+        sessionStorage.removeItem(`timer_${key}`);
         return elapsed;
       }
-    } catch (error) {
-      console.warn('Failed to get elapsed time:', error);
+    } catch {
+      // ignore
     }
     return 0;
-  }
+  },
 };

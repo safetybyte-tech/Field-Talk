@@ -1,7 +1,6 @@
 import React from 'react';
-import { Plus, FileText, Calendar, Users, Send } from 'lucide-react';
+import { Plus, FileText, Calendar, Users } from 'lucide-react';
 import { ToolboxTalk } from '../types';
-import { storage } from '../utils/storage';
 import { TalksTable } from './TalksTable';
 
 interface DashboardProps {
@@ -15,65 +14,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNewTalk,
   onEditTalk
 }) => {
-  const [outboxCount, setOutboxCount] = React.useState(0);
   const [viewMode, setViewMode] = React.useState<'cards' | 'table'>('cards');
   const [weeklyStats, setWeeklyStats] = React.useState({ completed: false, streak: 0 });
-
-  React.useEffect(() => {
-    const updateOutbox = () => {
-      const queue = storage.getQueue();
-      const unsubmittedTalks = talks.filter(talk => !talk.submittedAt);
-      setOutboxCount(queue.length + unsubmittedTalks.length);
-    };
-    
-    updateOutbox();
-    const interval = setInterval(updateOutbox, 1000);
-    
-    return () => clearInterval(interval);
-  }, [talks]);
 
   React.useEffect(() => {
     const calculateWeeklyStats = () => {
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday) in local time
+      startOfWeek.setDate(now.getDate() - now.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
-      
-      // Check if there's a submitted talk this week
+
       const thisWeekTalk = talks.find(talk => {
-        const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
+        const talkDate = new Date(talk.date + 'T00:00:00');
         return talkDate >= startOfWeek && talk.submittedAt;
       });
-      
-      // Calculate streak by checking consecutive weeks backwards
+
       let streak = 0;
       let checkWeek = new Date(startOfWeek);
-      
+
       while (true) {
         const weekEnd = new Date(checkWeek);
         weekEnd.setDate(checkWeek.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
-        
+
         const weekHasTalk = talks.some(talk => {
-          const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
+          const talkDate = new Date(talk.date + 'T00:00:00');
           return talkDate >= checkWeek && talkDate <= weekEnd && talk.submittedAt;
         });
-        
+
         if (weekHasTalk) {
           streak++;
-          // Move to previous week
           checkWeek.setDate(checkWeek.getDate() - 7);
         } else {
           break;
         }
       }
-      
+
       setWeeklyStats({
         completed: !!thisWeekTalk,
         streak: streak
       });
     };
-    
+
     calculateWeeklyStats();
   }, [talks]);
 
@@ -86,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   });
 
   const thisWeekTalks = talks.filter(talk => {
-    const talkDate = new Date(talk.date + 'T00:00:00'); // Treat as local date
+    const talkDate = new Date(talk.date + 'T00:00:00');
     const today = new Date();
     const weekAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
     return talkDate >= weekAgo && talkDate <= today;
@@ -104,7 +86,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }`}>{todayTalks.length}</div>
           <div className="text-sm text-secondary-600">Today</div>
         </div>
-        
+
         <div className={`p-4 rounded-lg ${
           thisWeekTalks.length > 1 ? 'bg-green-50' : 'bg-primary-100'
         }`}>
@@ -113,34 +95,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }`}>{thisWeekTalks.length}</div>
           <div className="text-sm text-secondary-600">This Week</div>
         </div>
-        
+
         <div className="bg-secondary-50 p-4 rounded-lg">
           <div className="text-2xl font-bold text-secondary-700">{talks.length}</div>
           <div className="text-sm text-secondary-600">Total</div>
         </div>
-        
+
         <div className={`p-4 rounded-lg ${
-          weeklyStats.completed 
-            ? 'bg-primary-50' 
+          weeklyStats.completed
+            ? 'bg-primary-50'
             : 'bg-red-50'
         }`}>
           <div className={`text-2xl font-bold ${
-            weeklyStats.completed 
-              ? 'text-primary-600' 
+            weeklyStats.completed
+              ? 'text-primary-600'
               : 'text-red-600'
           }`}>
             {weeklyStats.completed ? '✅' : '0/1'}
           </div>
           <div className={`text-sm ${
-            weeklyStats.completed 
-              ? 'text-primary-600' 
+            weeklyStats.completed
+              ? 'text-primary-600'
               : 'text-red-600'
           }`}>
             This Week
           </div>
           {weeklyStats.streak > 0 && (
             <div className="text-xs text-secondary-500 mt-1">
-              🔥 {weeklyStats.streak} week streak
+              {weeklyStats.streak} week streak
             </div>
           )}
         </div>
@@ -203,7 +185,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {talks.slice(0, 10).map((talk) => {
               const presentCount = talk.attendees.filter(a => a.present).length;
               const totalCount = talk.attendees.length;
-              
+
               return (
                 <div
                   key={talk.id}
@@ -227,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <p className="text-sm text-secondary-500 mt-1">{talk.location}</p>
                       )}
                     </div>
-                    
+
                     <div className="ml-4">
                       {talk.submittedAt ? (
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">

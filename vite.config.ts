@@ -35,14 +35,15 @@ export default defineConfig({
     })
   ],
   optimizeDeps: {
-    include: ['lucide-react']
+    include: ['lucide-react', '@supabase/supabase-js']
   },
   build: {
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          lucide: ['lucide-react']
+          lucide: ['lucide-react'],
+          supabase: ['@supabase/supabase-js']
         }
       }
     }
