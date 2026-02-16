@@ -77,6 +77,21 @@ export const auth = {
     return null;
   },
 
+  // Reset password for an existing user (by email)
+  resetPassword: (email: string, newPassword: string): boolean => {
+    const users = auth.getAllUsers();
+    const user = users.find(u => u.email === email);
+    if (!user) return false;
+    localStorage.setItem(`pwd_${user.id}`, btoa(newPassword));
+    return true;
+  },
+
+  // Find user by email (used for forgot-password lookup)
+  findUserByEmail: (email: string): User | null => {
+    const users = auth.getAllUsers();
+    return users.find(u => u.email === email) ?? null;
+  },
+
   // Register new user
   register: (email: string, username: string, name: string, password: string): User | null => {
     if (!auth.isValidEmail(email)) {
