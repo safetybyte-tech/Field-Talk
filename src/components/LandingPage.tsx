@@ -434,23 +434,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
             {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="mb-1">
                 <label className="block text-sm font-medium text-secondary-700">
                   Password
                 </label>
-                {view === 'login' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError('');
-                      setResetData({ email: formData.email, newPassword: '', confirmPassword: '' });
-                      setView('forgot');
-                    }}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    Forgot password?
-                  </button>
-                )}
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
@@ -479,6 +466,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             >
               {loading ? 'Please wait...' : (view === 'login' ? 'Sign In' : 'Create Account')}
             </button>
+
+            {/* Forgot Password Link (login only) */}
+            {view === 'login' && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setResetData({ email: formData.email, newPassword: '', confirmPassword: '' });
+                    setView('forgot');
+                  }}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium underline"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Toggle Mode */}
