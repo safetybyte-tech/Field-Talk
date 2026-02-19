@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { User } from '../types';
-import type { Session } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 function sessionToUser(session: Session): User {
   const meta = session.user.user_metadata;
@@ -18,9 +18,7 @@ function sessionToUser(session: Session): User {
 export const auth = {
   /** Get current session user (checks local Supabase session) */
   getCurrentUser: async (): Promise<User | null> => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
     return sessionToUser(session);
   },
@@ -40,20 +38,13 @@ export const auth = {
       },
     });
     if (error) throw error;
-    if (!data.session) {
-      throw new Error(
-        'Registration succeeded but no session returned. Check email confirmation settings.'
-      );
-    }
+    if (!data.session) throw new Error('Registration succeeded but no session returned. Check email confirmation settings.');
     return sessionToUser(data.session);
   },
 
   /** Sign in with email + password */
   login: async (email: string, password: string): Promise<User> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return sessionToUser(data.session);
   },
@@ -64,34 +55,29 @@ export const auth = {
     if (error) throw error;
   },
 
-  /** Send password reset email */
-  requestPasswordReset: async (email: string): Promise<void> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+  /** Subscribe to auth state changes. Returns unsubscribe function. */
+  onAuthStateChange: (callback: (user: User | null, event: AuthChangeEvent) => void) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      callback(session ? sessionToUser(session) : null, event);
+    });
+    return () => subscription.unsubscribe();
   },
 
-  /** Subscribe to auth state changes. Returns unsubscribe function. */
-  onAuthStateChange: (callback: (user: User | null) => void) => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      callback(session ? sessionToUser(session) : null);
-    });
-    return subscription.unsubscribe;
+  /** Send a password reset email */
+  requestPasswordReset: async (email: string): Promise<void> => {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
   },
 
   /** Get the current access token (JWT) for API calls */
   getAccessToken: async (): Promise<string | null> => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
   },
 
   /** Update the user's profile (metadata + profiles table) */
-  updateProfile: async (
-    updates: Partial<Pick<User, 'name' | 'username' | 'trade' | 'customTrade'>>
-  ): Promise<User> => {
+  updateProfile: async (updates: Partial<Pick<User, 'name' | 'username' | 'trade' | 'customTrade'>>): Promise<User> => {
     // Update auth metadata
     const { data: authData, error: authError } = await supabase.auth.updateUser({
       data: updates,
@@ -104,9 +90,7 @@ export const auth = {
     if (updates.name !== undefined) profileUpdates.name = updates.name;
     if (updates.username !== undefined) profileUpdates.username = updates.username;
     if (updates.trade !== undefined) profileUpdates.trade = updates.trade;
-    if (updates.customTrade !== undefined) {
-      profileUpdates.custom_trade = updates.customTrade;
-    }
+    if (updates.customTrade !== undefined) profileUpdates.custom_trade = updates.customTrade;
 
     if (Object.keys(profileUpdates).length > 0) {
       const { error: profileError } = await supabase
@@ -121,7 +105,7 @@ export const auth = {
     return sessionToUser(session);
   },
 
-  /** Change password */
+  /** Change password for the active session (profile or recovery flow) */
   changePassword: async (newPassword: string): Promise<void> => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;

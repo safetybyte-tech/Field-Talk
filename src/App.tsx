@@ -14,9 +14,23 @@ import { Loader2 } from 'lucide-react';
 
 type ViewType = 'dashboard' | 'edit' | 'outbox' | 'profile';
 
+function isPasswordRecoveryLink(): boolean {
+  const hash = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const hashParams = new URLSearchParams(hash);
+  if (hashParams.get('type') === 'recovery') {
+    return true;
+  }
+
+  const queryParams = new URLSearchParams(window.location.search);
+  return queryParams.get('type') === 'recovery';
+}
+
 function App() {
   const [user, setUser] = React.useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = React.useState(isPasswordRecoveryLink);
   const [authLoading, setAuthLoading] = React.useState(true);
   const [currentView, setCurrentView] = React.useState<ViewType>('dashboard');
   const [talks, setTalks] = React.useState<ToolboxTalk[]>([]);
@@ -61,7 +75,14 @@ function App() {
     });
 
     // Subscribe to future auth changes
-    const unsubscribe = auth.onAuthStateChange((changedUser) => {
+    const unsubscribe = auth.onAuthStateChange((changedUser, event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
+      if (event === 'SIGNED_OUT') {
+        setIsPasswordRecovery(false);
+      }
+
       if (changedUser) {
         setUser(changedUser);
         setIsAuthenticated(true);
@@ -84,6 +105,12 @@ function App() {
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
     setIsAuthenticated(true);
+    setIsPasswordRecovery(false);
+  };
+
+  const handlePasswordResetComplete = () => {
+    setIsPasswordRecovery(false);
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
   };
 
   const handleLogout = async () => {
@@ -217,8 +244,14 @@ function App() {
   }
 
   // Show landing page if not authenticated
-  if (!isAuthenticated) {
-    return <LandingPage onLogin={handleLogin} />;
+  if (!isAuthenticated || isPasswordRecovery) {
+    return (
+      <LandingPage
+        onLogin={handleLogin}
+        isRecoveryMode={isPasswordRecovery}
+        onPasswordResetComplete={handlePasswordResetComplete}
+      />
+    );
   }
 
   return (
