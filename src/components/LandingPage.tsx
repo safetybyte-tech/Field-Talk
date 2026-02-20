@@ -314,18 +314,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             )}
 
-            {isLogin && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={showForgotPassword}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Forgot your password?
-                </button>
-              </div>
-            )}
-
             {isForgot && (
               <p className="text-xs text-secondary-500">
                 Check your spam folder if you do not see the email. Reset links expire for security.
@@ -355,6 +343,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mt-6 text-center">
             {(isLogin || isSignup) && (
               <button
+                type="button"
                 onClick={toggleMode}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
@@ -364,8 +353,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 }
               </button>
             )}
+            {isLogin && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={showForgotPassword}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
             {isForgot && (
               <button
+                type="button"
                 onClick={backToLogin}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
@@ -374,6 +375,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             )}
             {isReset && (
               <button
+                type="button"
                 onClick={backFromReset}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
