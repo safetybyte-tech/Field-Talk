@@ -38,7 +38,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         password: '',
         confirmPassword: ''
       }));
+      return;
     }
+
+    // If recovery mode has been cleared (or stale URL params were removed),
+    // return to the normal login experience.
+    setMode((current) => (current === 'reset' ? 'login' : current));
   }, [isRecoveryMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,6 +140,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       password: '',
       confirmPassword: ''
     });
+  };
+
+  const backFromReset = () => {
+    onPasswordResetComplete?.();
+    backToLogin();
   };
 
   const isLogin = mode === 'login';
@@ -357,6 +367,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {isForgot && (
               <button
                 onClick={backToLogin}
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Back to sign in
+              </button>
+            )}
+            {isReset && (
+              <button
+                onClick={backFromReset}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
                 Back to sign in

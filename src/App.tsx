@@ -19,12 +19,22 @@ function isPasswordRecoveryLink(): boolean {
     ? window.location.hash.slice(1)
     : window.location.hash;
   const hashParams = new URLSearchParams(hash);
-  if (hashParams.get('type') === 'recovery') {
+  const hashHasRecoveryToken =
+    !!hashParams.get('access_token') ||
+    !!hashParams.get('refresh_token') ||
+    !!hashParams.get('token_hash');
+
+  if (hashParams.get('type') === 'recovery' && hashHasRecoveryToken) {
     return true;
   }
 
   const queryParams = new URLSearchParams(window.location.search);
-  return queryParams.get('type') === 'recovery';
+  const queryHasRecoveryToken =
+    !!queryParams.get('access_token') ||
+    !!queryParams.get('refresh_token') ||
+    !!queryParams.get('token_hash');
+
+  return queryParams.get('type') === 'recovery' && queryHasRecoveryToken;
 }
 
 function App() {
@@ -110,7 +120,14 @@ function App() {
 
   const handlePasswordResetComplete = () => {
     setIsPasswordRecovery(false);
-    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+
+    const queryParams = new URLSearchParams(window.location.search);
+    ['type', 'access_token', 'refresh_token', 'expires_in', 'expires_at', 'token_type', 'token_hash'].forEach((key) => {
+      queryParams.delete(key);
+    });
+    const cleanedSearch = queryParams.toString();
+    const nextUrl = `${window.location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}`;
+    window.history.replaceState({}, document.title, nextUrl);
   };
 
   const handleLogout = async () => {
