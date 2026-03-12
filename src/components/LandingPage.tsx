@@ -388,6 +388,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-secondary-500">
           <p>Secure • Fast • Mobile-First</p>
+          <p className="mt-2 text-xs text-secondary-400">
+            Built by{' '}
+            <a
+              href="https://nickrogoff.com"
+              className="text-secondary-500 hover:text-secondary-600 underline-offset-2 hover:underline"
+            >
+              Nick Rogoff
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>
