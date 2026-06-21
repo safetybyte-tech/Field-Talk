@@ -2,6 +2,24 @@ import { supabase } from './supabase';
 import { User } from '../types';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
+/** True when an error is a network/connectivity failure rather than a real auth error. */
+export function isNetworkError(err: unknown): boolean {
+  const name = (err as { name?: string })?.name ?? '';
+  const message = (err as { message?: string })?.message ?? '';
+  return (
+    /AuthRetryableFetchError/i.test(name) ||
+    /failed to fetch|network ?error|load failed|fetch failed/i.test(message)
+  );
+}
+
+/** Turn an auth error into a message safe to show the user. */
+export function describeAuthError(err: unknown): string {
+  if (isNetworkError(err)) {
+    return "Can't reach the server. Check your internet connection and try again. If the problem persists, the service may be temporarily unavailable.";
+  }
+  return err instanceof Error ? err.message : 'An error occurred. Please try again.';
+}
+
 function sessionToUser(session: Session): User {
   const meta = session.user.user_metadata;
   return {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Mail, Lock, UserPlus, User } from 'lucide-react';
-import { auth } from '../utils/auth';
+import { auth, describeAuthError } from '../utils/auth';
 import { User as UserType } from '../types';
 
 interface LandingPageProps {
@@ -99,7 +99,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      setError(describeAuthError(err));
     } finally {
       setLoading(false);
     }

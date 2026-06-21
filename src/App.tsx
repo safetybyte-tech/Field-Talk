@@ -9,8 +9,9 @@ import { ToolboxTalk, User } from './types';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
+import { isSupabaseConfigured } from './utils/supabase';
 import { logger } from './utils/logger';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 type ViewType = 'dashboard' | 'edit' | 'outbox' | 'profile';
 
@@ -247,6 +248,32 @@ function App() {
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
   };
+
+  // Backend isn't configured for this build (missing VITE_SUPABASE_* vars).
+  // These are inlined at build time, so this can only be fixed by setting the
+  // vars and redeploying — show a clear message instead of a blank page.
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="text-red-600" size={32} />
+          </div>
+          <h1 className="text-xl font-bold text-secondary-900 mb-2">
+            Configuration error
+          </h1>
+          <p className="text-secondary-600 text-sm">
+            This app can't connect to its backend because the Supabase
+            environment variables are missing from this build. Set
+            <code className="mx-1 px-1 py-0.5 bg-gray-100 rounded text-xs">VITE_SUPABASE_URL</code>
+            and
+            <code className="mx-1 px-1 py-0.5 bg-gray-100 rounded text-xs">VITE_SUPABASE_ANON_KEY</code>
+            in the deployment settings, then redeploy.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading spinner while checking auth
   if (authLoading) {
