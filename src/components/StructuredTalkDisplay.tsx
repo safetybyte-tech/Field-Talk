@@ -66,19 +66,19 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
     },
     {
       key: 'practices' as keyof StructuredTalkContent,
-      title: 'Personal Protective Equipment (PPE)',
-      icon: Shield,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    },
-    {
-      key: 'ppe' as keyof StructuredTalkContent,
       title: 'Pre-Task Planning',
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200'
+    },
+    {
+      key: 'ppe' as keyof StructuredTalkContent,
+      title: 'Personal Protective Equipment (PPE)',
+      icon: Shield,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     },
     {
       key: 'sif' as keyof StructuredTalkContent,

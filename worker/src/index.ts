@@ -1,5 +1,6 @@
 interface Env {
   OPENAI_API_KEY: string;
+  OPENAI_MODEL?: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   CORS_ORIGIN: string;
@@ -10,6 +11,68 @@ interface SupabaseUser {
   id: string;
   email: string;
 }
+
+interface StructuredTalkContent {
+  i: string;
+  hazards: string[];
+  practices: string[];
+  ppe: string[];
+  sif: string[];
+  manual: string[];
+  q: string[];
+}
+
+interface OpenAIResponsesData {
+  output_text?: string;
+  output?: {
+    content?: {
+      text?: string;
+      type?: string;
+    }[];
+  }[];
+  usage?: {
+    total_tokens?: number;
+  };
+}
+
+const structuredTalkSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['i', 'hazards', 'practices', 'ppe', 'sif', 'manual', 'q'],
+  properties: {
+    i: { type: 'string' },
+    hazards: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    practices: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    ppe: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    sif: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    manual: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+    q: {
+      type: 'array',
+      maxItems: 4,
+      items: { type: 'string' },
+    },
+  },
+};
 
 function corsHeaders(origin: string) {
   return {
@@ -26,12 +89,22 @@ function jsonResponse(body: unknown, status: number, origin: string) {
   });
 }
 
+function extractResponseText(openaiData: OpenAIResponsesData): string {
+  if (openaiData.output_text) return openaiData.output_text;
+
+  return openaiData.output
+    ?.flatMap((item) => item.content || [])
+    .map((content) => content.text || '')
+    .join('')
+    .trim() || '';
+}
+
 /** Verify a Supabase JWT by calling the auth endpoint. */
-async function verifyToken(token: string, supabaseUrl: string): Promise<SupabaseUser | null> {
+async function verifyToken(token: string, supabaseUrl: string, serviceKey: string): Promise<SupabaseUser | null> {
   const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: token, // Supabase also accepts the JWT as apikey for user endpoints
+      apikey: serviceKey,
     },
   });
   if (!res.ok) return null;
@@ -89,7 +162,7 @@ export default {
       return jsonResponse({ error: 'Missing authorization token' }, 401, origin);
     }
 
-    const user = await verifyToken(token, env.SUPABASE_URL);
+    const user = await verifyToken(token, env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
     if (!user) {
       return jsonResponse({ error: 'Invalid or expired token' }, 401, origin);
     }
@@ -119,35 +192,39 @@ export default {
     }
 
     // 4. Call OpenAI
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiRes = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
+        model: env.OPENAI_MODEL || 'gpt-5.4-mini',
+        input: [
           {
             role: 'system',
             content: `You are FieldTalk Formatter. Convert a short task description into a structured toolbox talk.
-
-Return ONLY compact JSON with these exact keys:
-{"i":"","hazards":[],"practices":[],"ppe":[],"sif":[],"manual":[],"q":[]}
 
 Rules:
 - i = 1–2 sentences (intro).
 - hazards/practices/ppe/sif/manual/q = arrays, max 4 items each.
 - Each item ≤ 12 words, action-oriented.
-- No citations, no extra keys, no markdown, no explanations.`,
+- No citations, markdown, or explanations.`,
           },
           {
             role: 'user',
             content: `The task is ${workDescription}`,
           },
         ],
-        max_tokens: 800,
-        temperature: 0.7,
+        max_output_tokens: 800,
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'toolbox_talk',
+            strict: true,
+            schema: structuredTalkSchema,
+          },
+        },
       }),
     });
 
@@ -160,12 +237,19 @@ Rules:
       );
     }
 
-    const openaiData = (await openaiRes.json()) as {
-      choices?: { message?: { content?: string } }[];
-      usage?: { total_tokens?: number };
-    };
-    const content = openaiData.choices?.[0]?.message?.content || '';
+    const openaiData = (await openaiRes.json()) as OpenAIResponsesData;
+    const content = extractResponseText(openaiData);
     const tokensUsed = openaiData.usage?.total_tokens || 0;
+
+    if (!content) {
+      return jsonResponse({ error: 'No content generated from OpenAI' }, 502, origin);
+    }
+
+    try {
+      JSON.parse(content) as StructuredTalkContent;
+    } catch {
+      return jsonResponse({ error: 'OpenAI returned invalid toolbox talk JSON' }, 502, origin);
+    }
 
     // 5. Record usage
     await recordUsage(user.id, tokensUsed, env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
