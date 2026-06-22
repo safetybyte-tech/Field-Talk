@@ -27,11 +27,11 @@ function jsonResponse(body: unknown, status: number, origin: string) {
 }
 
 /** Verify a Supabase JWT by calling the auth endpoint. */
-async function verifyToken(token: string, supabaseUrl: string): Promise<SupabaseUser | null> {
+async function verifyToken(token: string, supabaseUrl: string, serviceKey: string): Promise<SupabaseUser | null> {
   const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: token, // Supabase also accepts the JWT as apikey for user endpoints
+      apikey: serviceKey,
     },
   });
   if (!res.ok) return null;
@@ -89,7 +89,7 @@ export default {
       return jsonResponse({ error: 'Missing authorization token' }, 401, origin);
     }
 
-    const user = await verifyToken(token, env.SUPABASE_URL);
+    const user = await verifyToken(token, env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
     if (!user) {
       return jsonResponse({ error: 'Invalid or expired token' }, 401, origin);
     }
