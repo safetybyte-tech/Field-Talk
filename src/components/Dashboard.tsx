@@ -30,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
 
       let streak = 0;
-      let checkWeek = new Date(startOfWeek);
+      const checkWeek = new Date(startOfWeek);
 
       while (true) {
         const weekEnd = new Date(checkWeek);

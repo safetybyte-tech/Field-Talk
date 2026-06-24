@@ -67,5 +67,5 @@ export interface LogEvent {
   talkId: string;
   eventName: string;
   timestamp: number;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
 }

@@ -84,7 +84,6 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
       };
       
       onUpdateRecipients([...recipients, recipient]);
-      setNewRecipient({ name: '', email: '', isDefault: false });
       setNewRecipient({ name: '', email: '', company: '', isDefault: false });
       setShowAddForm(false);
     }
@@ -347,7 +346,7 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
                         name: recipient.name,
                         email: recipient.email,
                         company: recipient.email.split('@')[1]?.split('.')[0] || '',
-                        isDefault: recipient.isDefault
+                        isDefault: !!recipient.isDefault
                       });
                       setShowAddForm(true);
                       // Remove the existing recipient so it can be re-added with edits

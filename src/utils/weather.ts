@@ -17,6 +17,28 @@ interface GeolocationCoords {
   longitude: number;
 }
 
+interface WeatherApiResponse {
+  current_weather: {
+    temperature: number;
+    weathercode: number;
+  };
+}
+
+interface NwsAlertFeature {
+  properties: {
+    headline?: string;
+    event?: string;
+    description?: string;
+    instruction?: string;
+    severity?: string;
+    urgency?: string;
+  };
+}
+
+interface NwsAlertResponse {
+  features?: NwsAlertFeature[];
+}
+
 // Simple weather descriptions for construction sites
 const getSimpleWeatherDescription = (condition: string, temp: number): string => {
   const tempF = Math.round((temp * 9/5) + 32);
@@ -75,7 +97,7 @@ const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<Weathe
       throw new Error('Weather API request failed');
     }
     
-    const weatherData = await weatherResponse.json();
+    const weatherData = (await weatherResponse.json()) as WeatherApiResponse;
     const current = weatherData.current_weather;
     
     // Try to get weather alerts from NWS (US only) or other sources
@@ -91,10 +113,10 @@ const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<Weathe
       );
       
       if (alertsResponse.ok) {
-        const alertsData = await alertsResponse.json();
-        alerts = alertsData.features?.map((feature: any) => ({
-          title: feature.properties.headline || feature.properties.event,
-          description: feature.properties.description || feature.properties.instruction,
+        const alertsData = (await alertsResponse.json()) as NwsAlertResponse;
+        alerts = alertsData.features?.map((feature) => ({
+          title: feature.properties.headline || feature.properties.event || 'Weather alert',
+          description: feature.properties.description || feature.properties.instruction || 'Review current weather conditions before starting work.',
           severity: mapSeverity(feature.properties.severity),
           urgency: mapUrgency(feature.properties.urgency)
         })).slice(0, 3) || []; // Limit to 3 most important alerts
@@ -124,13 +146,13 @@ const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<Weathe
       condition: getConditionFromCode(current.weathercode),
       alerts
     };
-  } catch (error) {
+  } catch {
     throw new Error('Failed to fetch weather data');
   }
 };
 
 // Helper functions for mapping alert severity and urgency
-const mapSeverity = (severity: string): WeatherAlert['severity'] => {
+const mapSeverity = (severity?: string): WeatherAlert['severity'] => {
   switch (severity?.toLowerCase()) {
     case 'extreme': return 'extreme';
     case 'severe': return 'severe';
@@ -139,7 +161,7 @@ const mapSeverity = (severity: string): WeatherAlert['severity'] => {
   }
 };
 
-const mapUrgency = (urgency: string): WeatherAlert['urgency'] => {
+const mapUrgency = (urgency?: string): WeatherAlert['urgency'] => {
   switch (urgency?.toLowerCase()) {
     case 'immediate': return 'immediate';
     case 'expected': return 'expected';

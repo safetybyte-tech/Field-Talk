@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search } from 'lucide-react';
+import { FileDown, Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee, StructuredTalkContent } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
@@ -10,6 +10,7 @@ import { getCachedWeather } from '../utils/weather';
 import { logger } from '../utils/logger';
 import { auth } from '../utils/auth';
 import { User } from '../types';
+import { openTalkPdf, parseStructuredTalkContent } from '../utils/talkDocument';
 
 interface WeatherAlert {
   title: string;
@@ -57,6 +58,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [isStructuredContent, setIsStructuredContent] = React.useState(false);
   const [structuredContent, setStructuredContent] = React.useState<StructuredTalkContent | null>(null);
   const [showDraftSelector, setShowDraftSelector] = React.useState(false);
+  const rollcallLoggedTalkIdRef = React.useRef<string | null>(null);
 
   // Common construction site locations for suggestions
   const commonLocations = [
@@ -123,20 +125,18 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
 
   // Check if content is structured JSON on component mount
   React.useEffect(() => {
-    try {
-      if (editedTalk.content && typeof editedTalk.content === 'string') {
-        const parsed = JSON.parse(editedTalk.content);
-        if (parsed && typeof parsed === 'object' && 'i' in parsed && 'h' in parsed) {
-          setStructuredContent(parsed);
-          setIsStructuredContent(true);
-        }
-      }
-    } catch (error) {
-      // Content is not structured JSON, keep as regular text
-      setIsStructuredContent(false);
-      setStructuredContent(null);
-    }
+    const parsed = parseStructuredTalkContent(editedTalk.content);
+    setStructuredContent(parsed);
+    setIsStructuredContent(!!parsed);
   }, [editedTalk.content]);
+
+  React.useEffect(() => {
+    if (editedTalk.submittedAt || rollcallLoggedTalkIdRef.current === editedTalk.id) return;
+
+    rollcallLoggedTalkIdRef.current = editedTalk.id;
+    logger.logEvent(currentUser?.id || '', editedTalk.id, 'rollcall_opened');
+    setRollcallStartTime(Date.now());
+  }, [currentUser?.id, editedTalk.id, editedTalk.submittedAt]);
 
   const refreshWeather = async () => {
     setLoadingWeather(true);
@@ -320,27 +320,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         throw new Error('No content generated from API');
       }
 
-      // Try to parse as JSON
-      let parsedContent: StructuredTalkContent;
-      try {
-        parsedContent = JSON.parse(generatedContent);
-        
-        // Validate the structure
-        if (!parsedContent.i || !Array.isArray(parsedContent.hazards) || !Array.isArray(parsedContent.practices) ||
-            !Array.isArray(parsedContent.ppe) || !Array.isArray(parsedContent.sif) ||
-            !Array.isArray(parsedContent.manual) || !Array.isArray(parsedContent.q)) {
-          throw new Error('Invalid JSON structure');
-        }
-        
-        // Set structured content
-        setStructuredContent(parsedContent);
-        setIsStructuredContent(true);
-        
-      } catch (parseError) {
-        // If parsing fails, treat as regular text content
-        setIsStructuredContent(false);
-        setStructuredContent(null);
-      }
+      const parsedContent = parseStructuredTalkContent(generatedContent);
+      setStructuredContent(parsedContent);
+      setIsStructuredContent(!!parsedContent);
 
       // Log successful AI generation
       const latencyMs = logger.getElapsedTime(`ai_generation_${editedTalk.id}`);
@@ -353,7 +335,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       setEditedTalk({
         ...editedTalk,
         title: generatedTitle,
-        content: isStructuredContent ? JSON.stringify(parsedContent) : generatedContent
+        content: parsedContent ? JSON.stringify(parsedContent) : generatedContent
       });
       
       // Mark that AI has been used
@@ -383,6 +365,15 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const handleSubmitAttempt = () => {
     // Always try to submit, which will trigger validation if needed
     handleSubmit();
+  };
+
+  const handlePdfDownload = () => {
+    try {
+      openTalkPdf(editedTalk);
+    } catch (error) {
+      setSaveStatus(error instanceof Error ? error.message : 'Unable to open PDF preview.');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
   };
   const loadTemplate = (templateId: string) => {
     const template = TALK_TEMPLATES.find(t => t.id === templateId);
@@ -443,7 +434,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const presentCount = editedTalk.attendees.filter(a => a.present).length;
   const totalCount = editedTalk.attendees.length;
   const hasValidationErrors = validationErrors.length > 0;
-  const isFormValid = validateForm().length === 0;
   const isSubmitted = !!editedTalk.submittedAt;
 
   return (
@@ -514,22 +504,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                       setEditedTalk(draft);
                       setShowDraftSelector(false);
                       
-                      // Check if the draft content is structured
-                      try {
-                        if (draft.content && typeof draft.content === 'string') {
-                          const parsed = JSON.parse(draft.content);
-                          if (parsed && typeof parsed === 'object' && 'i' in parsed && 'h' in parsed) {
-                            setStructuredContent(parsed);
-                            setIsStructuredContent(true);
-                          } else {
-                            setIsStructuredContent(false);
-                            setStructuredContent(null);
-                          }
-                        }
-                      } catch (error) {
-                        setIsStructuredContent(false);
-                        setStructuredContent(null);
-                      }
+                      const parsed = parseStructuredTalkContent(draft.content);
+                      setStructuredContent(parsed);
+                      setIsStructuredContent(!!parsed);
                     }}
                     className="p-4 hover:bg-primary-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                   >
@@ -587,7 +564,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             <span className="font-semibold">✅ This toolbox talk has been submitted</span>
           </div>
           <p className="text-sm">
-            Submitted on {new Date(editedTalk.submittedAt).toLocaleString()}. 
+            Submitted on {editedTalk.submittedAt ? new Date(editedTalk.submittedAt).toLocaleString() : 'unknown date'}.
             All fields are now read-only to maintain record integrity.
           </p>
         </div>
@@ -1058,13 +1035,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
           </div>
         ) : (
           <div data-field="attendees">
-            {/* Log rollcall opened when component mounts */}
-            {React.useEffect(() => {
-              if (!rollcallStartTime) {
-                logger.logEvent(currentUser?.id || '', editedTalk.id, 'rollcall_opened');
-                setRollcallStartTime(Date.now());
-              }
-            }, [])}
             <QuickAttendance
               attendees={editedTalk.attendees}
               onUpdateAttendees={updateAttendees}
@@ -1104,7 +1074,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                             {recipient.email}
                           </div>
                         </div>
-                        <span className="text-sm font-medium">✅ Sent</span>
+                        <span className="text-sm font-medium">Included</span>
                       </div>
                     ))
                 ) : (
@@ -1126,18 +1096,26 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       {/* Action Buttons */}
       {!isSubmitted && (
         <div className="flex flex-col gap-4">
-          <div className="flex gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <button
               onClick={handleSave}
-              className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+              className="bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
             >
               <Save size={20} />
               Save Draft
             </button>
+
+            <button
+              onClick={handlePdfDownload}
+              className="bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            >
+              <FileDown size={20} />
+              Save PDF
+            </button>
             
             <button
               onClick={handleSubmitAttempt}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+              className={`py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
                 'bg-primary-600 hover:bg-primary-700 text-white'
               }`}
             >
@@ -1146,6 +1124,24 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             </button>
           </div>
           
+          {saveStatus && (
+            <div className="text-center text-sm text-primary-600 font-medium">
+              {saveStatus}
+            </div>
+          )}
+        </div>
+      )}
+
+      {isSubmitted && (
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={handlePdfDownload}
+            className="w-full bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+          >
+            <FileDown size={20} />
+            Save PDF
+          </button>
+
           {saveStatus && (
             <div className="text-center text-sm text-primary-600 font-medium">
               {saveStatus}

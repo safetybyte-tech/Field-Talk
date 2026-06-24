@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, Clock, LogOut, User, Send } from 'lucide-react';
+import { Wifi, LogOut, User, Send } from 'lucide-react';
 import { User as UserType, ToolboxTalk } from '../types';
 
 interface HeaderProps {

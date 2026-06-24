@@ -6,3 +6,7 @@ compatibility_date = "2024-01-01"
 CORS_ORIGIN = "https://toolbox.nickrogoff.com"
 DAILY_LIMIT = "20"
 OPENAI_MODEL = "gpt-5.4-mini"
+RESEND_FROM_NAME = "Field Talk"
+# Set RESEND_FROM_EMAIL to a verified Resend sender/domain email before enabling sends.
+# RESEND_FROM_EMAIL = "no-reply@example.com"
+# Store the API key with: wrangler secret put RESEND_API_KEY

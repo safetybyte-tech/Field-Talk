@@ -217,7 +217,7 @@ function App() {
         error: error instanceof Error ? error.message : 'Unknown error',
         latency_ms: latencyMs,
       });
-      setSubmitStatus('Failed to submit. Please try again.');
+      setSubmitStatus(error instanceof Error ? `Failed to submit: ${error.message}` : 'Failed to submit. Please try again.');
       setTimeout(() => setSubmitStatus(''), 3000);
     }
   };
