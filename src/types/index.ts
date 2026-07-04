@@ -37,6 +37,13 @@ export interface TalkTemplate {
   category: string;
 }
 
+export interface TalkCitation {
+  citation: string; // e.g. "1926.501"
+  subpart_title: string; // e.g. "Fall Protection"
+  source_url: string; // eCFR link for verification
+  sections: string[]; // section keys ("i", "hazards", ...) that used this citation
+}
+
 export interface StructuredTalkContent {
   i: string; // Introduction (1-2 sentences)
   hazards: string[]; // Hazards (max 4 items, ≤12 words each)
@@ -45,6 +52,7 @@ export interface StructuredTalkContent {
   sif: string[]; // Serious injury/fatality prevention (max 4 items, ≤12 words each)
   manual: string[]; // Material handling (max 4 items, ≤12 words each)
   q: string[]; // Questions (max 4 items, ≤12 words each)
+  citations?: TalkCitation[]; // OSHA standards retrieved for this talk (unofficial text; verify via source_url)
 }
 
 export interface User {

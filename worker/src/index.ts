@@ -1,6 +1,9 @@
 interface Env {
   OPENAI_API_KEY: string;
   OPENAI_MODEL?: string;
+  OPENAI_EMBEDDING_MODEL?: string;
+  OSHA_MATCH_THRESHOLD?: string;
+  OSHA_MATCH_COUNT?: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   CORS_ORIGIN: string;
@@ -15,6 +18,13 @@ interface SupabaseUser {
   email: string;
 }
 
+interface TalkCitation {
+  citation: string;
+  subpart_title: string;
+  source_url: string;
+  sections: string[];
+}
+
 interface StructuredTalkContent {
   i: string;
   hazards: string[];
@@ -23,6 +33,16 @@ interface StructuredTalkContent {
   sif: string[];
   manual: string[];
   q: string[];
+  citations?: TalkCitation[];
+}
+
+interface OshaStandardMatch {
+  citation: string;
+  subpart: string | null;
+  subpart_title: string | null;
+  source_url: string;
+  text: string;
+  similarity: number;
 }
 
 interface Recipient {
@@ -108,6 +128,128 @@ const structuredTalkSchema = {
     },
   },
 };
+
+const TALK_SECTION_KEYS = ['i', 'hazards', 'practices', 'ppe', 'sif', 'manual', 'q'];
+
+/** Cap how much regulatory text goes into the prompt per matched standard. */
+const STANDARD_PROMPT_CHAR_LIMIT = 1500;
+
+/** Build the response schema, adding a citations field only when standards were retrieved. */
+function buildTalkSchema(retrievedCitations: string[]) {
+  if (retrievedCitations.length === 0) return structuredTalkSchema;
+
+  return {
+    ...structuredTalkSchema,
+    required: [...structuredTalkSchema.required, 'citations'],
+    properties: {
+      ...structuredTalkSchema.properties,
+      citations: {
+        type: 'array',
+        maxItems: 5,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['citation', 'sections'],
+          properties: {
+            // Enum keeps the model from inventing citation numbers.
+            citation: { type: 'string', enum: retrievedCitations },
+            sections: {
+              type: 'array',
+              items: { type: 'string', enum: TALK_SECTION_KEYS },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+/** Embed text with the same model the sync script uses for the corpus. */
+async function embedText(text: string, env: Env): Promise<number[] | null> {
+  const res = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+      input: text.slice(0, 8000),
+      dimensions: 1536,
+    }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { data?: { embedding?: number[] }[] };
+  const embedding = data.data?.[0]?.embedding;
+  return Array.isArray(embedding) ? embedding : null;
+}
+
+/**
+ * Retrieve OSHA 1926 standards relevant to the work description via pgvector.
+ * Fails soft: any error returns an empty list so generation still works.
+ */
+async function retrieveOshaStandards(workDescription: string, env: Env): Promise<OshaStandardMatch[]> {
+  try {
+    const embedding = await embedText(workDescription, env);
+    if (!embedding) return [];
+
+    const threshold = parseFloat(env.OSHA_MATCH_THRESHOLD || '') || 0.4;
+    const count = parseInt(env.OSHA_MATCH_COUNT || '', 10) || 4;
+
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/match_osha_standards`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        query_embedding: embedding,
+        match_threshold: threshold,
+        match_count: count,
+      }),
+    });
+    if (!res.ok) return [];
+
+    const rows = (await res.json()) as OshaStandardMatch[];
+    return Array.isArray(rows) ? rows.filter((row) => row?.citation && row?.source_url) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** System prompt block listing the retrieved standards and the citation rules. */
+function buildStandardsPrompt(standards: OshaStandardMatch[]): string {
+  const list = standards
+    .map((s) => {
+      const title = s.subpart_title ? ` — ${s.subpart_title}` : '';
+      return `[${s.citation}${title}]\n${s.text.slice(0, STANDARD_PROMPT_CHAR_LIMIT)}`;
+    })
+    .join('\n\n');
+
+  return `
+
+Relevant OSHA 29 CFR Part 1926 standards for this task (the ONLY standards you may cite):
+
+${list}
+
+Citation rules:
+- When an item is directly supported by one of the standards above, append its citation in parentheses at the end of the item, e.g. "(1926.501)". The citation does not count toward the 12-word limit.
+- Cite ONLY citation numbers from the list above. Never cite, mention, or invent any other standard.
+- If a standard above is not relevant to an item, do not cite it. Not every item needs a citation.
+- List each citation you used in the "citations" field, with the section keys ("i", "hazards", "practices", "ppe", "sif", "manual", "q") where it appears. Leave "citations" empty if you cited nothing.`;
+}
+
+/** Strip any inline 1926.x citation that is not in the retrieved set. */
+function stripUnknownCitations(text: string, allowed: Set<string>): string {
+  return text
+    .replace(/\(?\s*(?:29\s*CFR\s*)?(1926\.\d+)(?:\([a-zA-Z0-9]+\))*\s*\)?/g, (match, base: string) =>
+      allowed.has(base) ? match : ' '
+    )
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:)])/g, '$1')
+    .trim();
+}
 
 function corsHeaders(origin: string) {
   return {
@@ -465,7 +607,25 @@ async function handleGenerateTalk(request: Request, env: Env, origin: string, us
     return jsonResponse({ error: 'workDescription is required' }, 400, origin);
   }
 
-  // 4. Call OpenAI
+  // 4. Retrieve relevant OSHA standards (same rate-limited request; fails soft to no standards)
+  const standards = await retrieveOshaStandards(workDescription, env);
+  const retrievedCitations = standards.map((s) => s.citation);
+  const standardsByCitation = new Map(standards.map((s) => [s.citation, s]));
+
+  const basePrompt = `You are FieldTalk Formatter. Convert a short task description into a structured toolbox talk.
+
+Rules:
+- i = 1–2 sentences (intro).
+- hazards/practices/ppe/sif/manual/q = arrays, max 4 items each.
+- Each item ≤ 12 words, action-oriented.
+- No markdown or explanations.`;
+
+  const systemPrompt =
+    standards.length > 0
+      ? basePrompt + buildStandardsPrompt(standards)
+      : basePrompt + '\n- No citations.';
+
+  // 5. Call OpenAI
   const openaiRes = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -477,26 +637,20 @@ async function handleGenerateTalk(request: Request, env: Env, origin: string, us
       input: [
         {
           role: 'system',
-          content: `You are FieldTalk Formatter. Convert a short task description into a structured toolbox talk.
-
-Rules:
-- i = 1–2 sentences (intro).
-- hazards/practices/ppe/sif/manual/q = arrays, max 4 items each.
-- Each item ≤ 12 words, action-oriented.
-- No citations, markdown, or explanations.`,
+          content: systemPrompt,
         },
         {
           role: 'user',
           content: `The task is ${workDescription}`,
         },
       ],
-      max_output_tokens: 800,
+      max_output_tokens: standards.length > 0 ? 1100 : 800,
       text: {
         format: {
           type: 'json_schema',
           name: 'toolbox_talk',
           strict: true,
-          schema: structuredTalkSchema,
+          schema: buildTalkSchema(retrievedCitations),
         },
       },
     }),
@@ -512,23 +666,56 @@ Rules:
   }
 
   const openaiData = (await openaiRes.json()) as OpenAIResponsesData;
-  const content = extractResponseText(openaiData);
+  const rawContent = extractResponseText(openaiData);
   const tokensUsed = openaiData.usage?.total_tokens || 0;
 
-  if (!content) {
+  if (!rawContent) {
     return jsonResponse({ error: 'No content generated from OpenAI' }, 502, origin);
   }
 
-  try {
-    JSON.parse(content) as StructuredTalkContent;
-  } catch {
+  const parsedContent = parseStructuredTalkContent(rawContent);
+  if (!parsedContent) {
     return jsonResponse({ error: 'OpenAI returned invalid toolbox talk JSON' }, 502, origin);
   }
+  const talkContent = parsedContent as StructuredTalkContent & {
+    citations?: { citation?: string; sections?: string[] }[];
+  };
 
-  // 5. Record usage
+  // 6. Enforce citation grounding: only retrieved standards may be cited, and
+  // citation metadata (title, eCFR link) comes from the database, not the model.
+  const allowedCitations = new Set(retrievedCitations);
+  talkContent.i = stripUnknownCitations(talkContent.i, allowedCitations);
+  for (const key of ['hazards', 'practices', 'ppe', 'sif', 'manual', 'q'] as const) {
+    talkContent[key] = talkContent[key]
+      .map((item) => stripUnknownCitations(item, allowedCitations))
+      .filter((item) => item.length > 0);
+  }
+
+  const mergedCitations = new Map<string, TalkCitation>();
+  for (const modelCitation of talkContent.citations || []) {
+    const standard = modelCitation.citation ? standardsByCitation.get(modelCitation.citation) : undefined;
+    if (!standard) continue;
+    const existing = mergedCitations.get(standard.citation);
+    const sections = (modelCitation.sections || []).filter((s) => TALK_SECTION_KEYS.includes(s));
+    if (existing) {
+      existing.sections = [...new Set([...existing.sections, ...sections])];
+    } else {
+      mergedCitations.set(standard.citation, {
+        citation: standard.citation,
+        subpart_title: standard.subpart_title || '',
+        source_url: standard.source_url,
+        sections,
+      });
+    }
+  }
+  talkContent.citations = [...mergedCitations.values()];
+
+  const content = JSON.stringify(talkContent);
+
+  // 7. Record usage
   await recordUsage(user.id, tokensUsed, env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-  // 6. Return result
+  // 8. Return result
   return jsonResponse(
     { content, usage: { used: used + 1, limit: dailyLimit } },
     200,

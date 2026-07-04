@@ -6,6 +6,13 @@ compatibility_date = "2024-01-01"
 CORS_ORIGIN = "https://toolbox.nickrogoff.com"
 DAILY_LIMIT = "20"
 OPENAI_MODEL = "gpt-5.4-mini"
+# OSHA retrieval: must match the embedding model used by scripts/sync-osha-standards.mjs
+OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+# Cosine-similarity floor for pulling standards into the prompt; raise toward 0.5
+# if irrelevant standards appear on vague descriptions, lower toward 0.3 if
+# clearly relevant ones are missed.
+OSHA_MATCH_THRESHOLD = "0.40"
+OSHA_MATCH_COUNT = "4"
 RESEND_FROM_NAME = "Field Talk"
 # Set RESEND_FROM_EMAIL to a verified Resend sender/domain email before enabling sends.
 # RESEND_FROM_EMAIL = "no-reply@example.com"
