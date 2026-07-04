@@ -1,6 +1,28 @@
 import React from 'react';
-import { AlertTriangle, Shield, CheckCircle, Wrench, HelpCircle, FileText } from 'lucide-react';
-import { StructuredTalkContent } from '../types';
+import { AlertTriangle, Shield, CheckCircle, Wrench, HelpCircle, FileText, ExternalLink, Scale } from 'lucide-react';
+import { StructuredTalkContent, TalkCitation } from '../types';
+
+const CitationBadges: React.FC<{ citations: TalkCitation[] }> = ({ citations }) => {
+  if (citations.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {citations.map((citation) => (
+        <a
+          key={citation.citation}
+          href={citation.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`${citation.subpart_title || 'OSHA standard'} — view on eCFR (unofficial text; verify against the official CFR)`}
+          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-700"
+        >
+          <ExternalLink size={10} />
+          29 CFR {citation.citation}
+        </a>
+      ))}
+    </div>
+  );
+};
 
 interface StructuredTalkDisplayProps {
   content: StructuredTalkContent;
@@ -106,6 +128,10 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
     }
   ];
 
+  const citations = content.citations ?? [];
+  const citationsForSection = (key: string): TalkCitation[] =>
+    citations.filter((citation) => citation.sections?.includes(key));
+
   return (
     <div className="space-y-6">
       {/* Introduction */}
@@ -125,6 +151,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
         ) : (
           <p className="text-gray-700 leading-relaxed">{content.i}</p>
         )}
+        <CitationBadges citations={citationsForSection('i')} />
       </div>
 
       {/* Structured Sections */}
@@ -180,9 +207,48 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
             ) : (
               <p className="text-gray-500 italic">No items added yet</p>
             )}
+            <CitationBadges citations={citationsForSection(section.key)} />
           </div>
         );
       })}
+
+      {/* Referenced OSHA standards + unofficial-text disclaimer */}
+      {citations.length > 0 && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Scale className="text-slate-600" size={18} />
+            <h3 className="text-sm font-semibold text-slate-700">Referenced OSHA Standards</h3>
+          </div>
+          <ul className="space-y-1">
+            {citations.map((citation) => (
+              <li key={citation.citation} className="text-sm text-slate-600">
+                <a
+                  href={citation.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline"
+                >
+                  29 CFR {citation.citation}
+                  <ExternalLink size={12} />
+                </a>
+                {citation.subpart_title ? ` — ${citation.subpart_title}` : ''}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-slate-500">
+            OSHA standard text referenced here is unofficial. Verify against the official CFR on{' '}
+            <a
+              href="https://www.ecfr.gov/current/title-29/subtitle-B/chapter-XVII/part-1926"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-slate-700"
+            >
+              eCFR.gov
+            </a>
+            .
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { StructuredTalkContent, ToolboxTalk } from '../types';
 
 type StructuredTalkKey = keyof StructuredTalkContent;
 
-const sectionLabels: Record<Exclude<StructuredTalkKey, 'i'>, string> = {
+const sectionLabels: Record<Exclude<StructuredTalkKey, 'i' | 'citations'>, string> = {
   hazards: 'Hazards',
   practices: 'Pre-Task Planning',
   ppe: 'Personal Protective Equipment',
@@ -11,7 +11,7 @@ const sectionLabels: Record<Exclude<StructuredTalkKey, 'i'>, string> = {
   q: 'Discussion Questions',
 };
 
-const sectionKeys = Object.keys(sectionLabels) as Exclude<StructuredTalkKey, 'i'>[];
+const sectionKeys = Object.keys(sectionLabels) as Exclude<StructuredTalkKey, 'i' | 'citations'>[];
 
 const escapeHtml = (value: string): string =>
   value
