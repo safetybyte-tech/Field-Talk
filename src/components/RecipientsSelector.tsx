@@ -7,15 +7,6 @@ interface RecipientsSelectorProps {
   onUpdateRecipients: (recipients: Recipient[]) => void;
 }
 
-// Default recipients that come pre-loaded
-const DEFAULT_RECIPIENTS: Omit<Recipient, 'id' | 'selected'>[] = [
-  { name: 'Safety Manager', email: 'safety@company.com', isDefault: true },
-  { name: 'Project Manager', email: 'pm@company.com', isDefault: true },
-  { name: 'Site Supervisor', email: 'supervisor@company.com', isDefault: false },
-  { name: 'HR Department', email: 'hr@company.com', isDefault: false },
-  { name: 'Quality Control', email: 'qc@company.com', isDefault: false },
-];
-
 export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
   recipients,
   onUpdateRecipients
@@ -28,18 +19,6 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
     company: '',
     isDefault: false
   });
-
-  // Initialize with default recipients if empty
-  React.useEffect(() => {
-    if (recipients.length === 0) {
-      const initialRecipients: Recipient[] = DEFAULT_RECIPIENTS.map((recipient, index) => ({
-        ...recipient,
-        id: `recipient_${Date.now()}_${index}`,
-        selected: recipient.isDefault || false
-      }));
-      onUpdateRecipients(initialRecipients);
-    }
-  }, [recipients.length, onUpdateRecipients]);
 
   // Filter recipients based on search term (by name or email domain/company)
   const filteredRecipients = recipients.filter(recipient => {
@@ -117,12 +96,9 @@ export const RecipientsSelector: React.FC<RecipientsSelectorProps> = ({
   const selectedCount = recipients.filter(r => r.selected).length;
   const defaultCount = recipients.filter(r => r.isDefault).length;
 
-  // Check if search term would create a new recipient
-  const canAddNewRecipient = searchTerm.trim() && 
-    !filteredRecipients.some(recipient => 
-      recipient.name.toLowerCase() === searchTerm.toLowerCase() ||
-      recipient.email.toLowerCase() === searchTerm.toLowerCase()
-    );
+  // Adding a recipient always requires an explicitly entered email address.
+  // Never create an address from a name or preselect a placeholder recipient.
+  const canAddNewRecipient = false;
 
   return (
     <div className="space-y-4">

@@ -1,4 +1,5 @@
 import { StructuredTalkContent, ToolboxTalk } from '../types';
+import { jsPDF } from 'jspdf';
 
 type StructuredTalkKey = keyof StructuredTalkContent;
 
@@ -265,18 +266,152 @@ export const buildTalkDocumentHtml = (talk: ToolboxTalk): string => {
 </html>`;
 };
 
-export const openTalkPdf = (talk: ToolboxTalk): void => {
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-  if (!printWindow) {
-    throw new Error('Pop-up blocked. Allow pop-ups for Field Talk to save a PDF.');
+const pdfSafeText = (value: string): string =>
+  value
+    .normalize('NFKD')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/[^\x20-\x7E\n]/g, '');
+
+const talkFileName = (talk: ToolboxTalk): string => {
+  const title = (talk.title || 'toolbox-talk')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72);
+  return `${talk.date || 'undated'}-${title || 'toolbox-talk'}.pdf`;
+};
+
+export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
+  const pdf = new jsPDF({ format: 'letter', unit: 'mm' });
+  const margin = 15;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  const ensureSpace = (height: number) => {
+    if (y + height <= pageHeight - margin) return;
+    pdf.addPage();
+    y = margin;
+  };
+
+  const writeLines = (lines: string[], fontSize = 10, bold = false, gap = 4.8) => {
+    pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+    pdf.setFontSize(fontSize);
+    lines.forEach((line) => {
+      ensureSpace(gap);
+      pdf.text(line, margin, y);
+      y += gap;
+    });
+  };
+
+  const writeParagraph = (value: string, fontSize = 10) => {
+    const lines = pdf.splitTextToSize(pdfSafeText(value), contentWidth) as string[];
+    writeLines(lines, fontSize);
+    y += 1.5;
+  };
+
+  const writeHeading = (value: string, level: 1 | 2 = 2) => {
+    const fontSize = level === 1 ? 18 : 12;
+    const lines = pdf.splitTextToSize(pdfSafeText(value), contentWidth) as string[];
+    ensureSpace(lines.length * (level === 1 ? 7 : 6) + 4);
+    pdf.setTextColor(level === 1 ? 17 : 29, level === 1 ? 24 : 78, level === 1 ? 39 : 216);
+    writeLines(lines, fontSize, true, level === 1 ? 7 : 6);
+    pdf.setTextColor(31, 41, 55);
+    y += 1;
+  };
+
+  const writeBullets = (items: string[]) => {
+    items.filter((item) => item.trim()).forEach((item) => {
+      const lines = pdf.splitTextToSize(pdfSafeText(item), contentWidth - 5) as string[];
+      lines.forEach((line, index) => {
+        ensureSpace(4.8);
+        if (index === 0) pdf.text('-', margin, y);
+        pdf.text(line, margin + 4, y);
+        y += 4.8;
+      });
+    });
+    y += 1.5;
+  };
+
+  writeHeading(talk.title || 'Toolbox Talk Record', 1);
+  pdf.setTextColor(75, 85, 99);
+  writeLines(['Field Talk safety record'], 9);
+  pdf.setTextColor(31, 41, 55);
+  y += 2;
+
+  const metadata = [
+    ['Date', formatDate(talk.date)],
+    ['Location', talk.location || 'Not set'],
+    ['Project Number', talk.projectNumber || 'Not set'],
+    ['Weather', talk.weather || 'Not set'],
+    ['Supervisor', talk.supervisor || 'Not set'],
+    ['Supervisor Email', talk.supervisorEmail || 'Not set'],
+  ];
+  metadata.forEach(([label, value]) => {
+    const lines = pdf.splitTextToSize(pdfSafeText(value), contentWidth - 38) as string[];
+    ensureSpace(Math.max(6, lines.length * 4.8));
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.text(`${label}:`, margin, y);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    lines.forEach((line, index) => pdf.text(line, margin + 36, y + index * 4.8));
+    y += Math.max(6, lines.length * 4.8);
+  });
+  y += 2;
+
+  const structuredContent = parseStructuredTalkContent(talk.content);
+  if (structuredContent) {
+    writeHeading('Introduction');
+    writeParagraph(structuredContent.i);
+    sectionKeys.forEach((key) => {
+      if (structuredContent[key].some((item) => item.trim())) {
+        writeHeading(sectionLabels[key]);
+        writeBullets(structuredContent[key]);
+      }
+    });
+  } else {
+    writeHeading('Talk Content');
+    const paragraphs = talk.content.split(/\n{2,}/).filter((paragraph) => paragraph.trim());
+    if (paragraphs.length) paragraphs.forEach((paragraph) => writeParagraph(paragraph));
+    else writeParagraph('No talk content recorded.');
   }
 
-  printWindow.document.open();
-  printWindow.document.write(buildTalkDocumentHtml(talk));
-  printWindow.document.close();
-  printWindow.focus();
+  writeHeading('Attendance');
+  if (talk.attendees.length) {
+    talk.attendees.forEach((attendee) => {
+      writeParagraph(`${attendee.name || 'Unnamed attendee'} — ${attendee.present ? 'Present' : 'Absent'}${attendee.signature ? ` — Signature: ${attendee.signature}` : ''}`, 9);
+    });
+  } else {
+    writeParagraph('No attendees recorded.', 9);
+  }
+  const presentCount = talk.attendees.filter((attendee) => attendee.present).length;
+  writeParagraph(`${presentCount} present, ${talk.attendees.length - presentCount} absent`, 9);
 
-  window.setTimeout(() => {
-    printWindow.print();
-  }, 250);
+  const recipients = talk.recipients.filter((recipient) => recipient.selected);
+  writeHeading('Email Distribution');
+  if (recipients.length) recipients.forEach((recipient) => writeParagraph(`${recipient.name} <${recipient.email}>`, 9));
+  else writeParagraph('No recipients selected.', 9);
+
+  pdf.setProperties({
+    title: pdfSafeText(talk.title || 'Toolbox Talk Record'),
+    subject: 'Field Talk safety record',
+    author: 'Field Talk',
+  });
+  return pdf;
+};
+
+export const createTalkPdfAttachment = (talk: ToolboxTalk): { filename: string; content: string } => {
+  const dataUri = createTalkPdf(talk).output('datauristring') as string;
+  const [, content = ''] = dataUri.split(',', 2);
+  if (!content) throw new Error('Unable to generate the toolbox-talk PDF.');
+  return { filename: talkFileName(talk), content };
+};
+
+export const openTalkPdf = (talk: ToolboxTalk): void => {
+  createTalkPdf(talk).save(talkFileName(talk));
 };

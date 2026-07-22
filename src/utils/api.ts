@@ -1,6 +1,7 @@
 import { ToolboxTalk } from '../types';
 import { auth } from './auth';
 import { storage } from './storage';
+import { createTalkPdfAttachment } from './talkDocument';
 
 const workerEndpoint = (path: string): string => {
   const workerUrl = import.meta.env.VITE_WORKER_URL;
@@ -23,7 +24,7 @@ const sendTalkEmail = async (talk: ToolboxTalk): Promise<void> => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ talk }),
+    body: JSON.stringify({ talk, pdf: createTalkPdfAttachment(talk) }),
   });
 
   if (!response.ok) {

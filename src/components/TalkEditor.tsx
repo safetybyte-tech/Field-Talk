@@ -371,7 +371,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     try {
       openTalkPdf(editedTalk);
     } catch (error) {
-      setSaveStatus(error instanceof Error ? error.message : 'Unable to open PDF preview.');
+      setSaveStatus(error instanceof Error ? error.message : 'Unable to download the PDF.');
       setTimeout(() => setSaveStatus(''), 3000);
     }
   };
@@ -1110,7 +1110,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
               className="bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
             >
               <FileDown size={20} />
-              Save PDF
+              Download PDF
             </button>
             
             <button
@@ -1139,7 +1139,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
             className="w-full bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
           >
             <FileDown size={20} />
-            Save PDF
+            Download PDF
           </button>
 
           {saveStatus && (

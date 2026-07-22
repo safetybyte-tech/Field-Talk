@@ -77,6 +77,11 @@ interface ToolboxTalk {
   submittedAt?: number;
 }
 
+interface PdfAttachment {
+  filename: string;
+  content: string;
+}
+
 interface OpenAIResponsesData {
   output_text?: string;
   output?: {
@@ -523,10 +528,12 @@ async function handleSendTalk(request: Request, env: Env, origin: string): Promi
   }
 
   let talk: ToolboxTalk;
+  let pdf: PdfAttachment | undefined;
   try {
-    const body = (await request.json()) as { talk?: ToolboxTalk };
+    const body = (await request.json()) as { talk?: ToolboxTalk; pdf?: PdfAttachment };
     if (!body.talk) throw new Error('Missing talk');
     talk = body.talk;
+    pdf = body.pdf;
   } catch {
     return jsonResponse({ error: 'Invalid request body' }, 400, origin);
   }
@@ -543,6 +550,14 @@ async function handleSendTalk(request: Request, env: Env, origin: string): Promi
 
   if (talk.supervisorEmail && !isEmail(talk.supervisorEmail)) {
     return jsonResponse({ error: `Invalid supervisor email: ${talk.supervisorEmail}` }, 400, origin);
+  }
+
+  if (!pdf || !pdf.filename.endsWith('.pdf') || !/^[A-Za-z0-9+/=]+$/.test(pdf.content)) {
+    return jsonResponse({ error: 'A valid PDF attachment is required.' }, 400, origin);
+  }
+
+  if (pdf.content.length > 9_000_000) {
+    return jsonResponse({ error: 'The generated PDF is too large to email.' }, 413, origin);
   }
 
   const email = buildTalkEmail(talk);
@@ -562,6 +577,7 @@ async function handleSendTalk(request: Request, env: Env, origin: string): Promi
       subject: email.subject,
       html: email.html,
       text: email.text,
+      attachments: [{ filename: pdf.filename, content: pdf.content }],
       reply_to: talk.supervisorEmail || undefined,
       headers: {
         'X-FieldTalk-Talk-ID': talk.id,
