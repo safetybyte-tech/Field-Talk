@@ -264,6 +264,17 @@ function corsHeaders(origin: string) {
   };
 }
 
+function resolveCorsOrigin(request: Request, configuredOrigins: string): string {
+  const allowedOrigins = configuredOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const requestOrigin = request.headers.get('Origin');
+
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
+  return allowedOrigins[0] || '*';
+}
+
 function jsonResponse(body: unknown, status: number, origin: string) {
   return new Response(JSON.stringify(body), {
     status,
@@ -741,7 +752,7 @@ Rules:
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const origin = env.CORS_ORIGIN || '*';
+    const origin = resolveCorsOrigin(request, env.CORS_ORIGIN || '*');
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {

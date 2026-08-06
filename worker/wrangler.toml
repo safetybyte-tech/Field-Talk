@@ -3,7 +3,8 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 [vars]
-CORS_ORIGIN = "https://toolbox.nickrogoff.com"
+# Comma-separated browser origins. Keep the personal domain available as a fallback.
+CORS_ORIGIN = "https://toolbox.safetynetdispatch.com,https://toolbox.nickrogoff.com"
 DAILY_LIMIT = "20"
 OPENAI_MODEL = "gpt-5.4-mini"
 # OSHA retrieval: must match the embedding model used by scripts/sync-osha-standards.mjs
