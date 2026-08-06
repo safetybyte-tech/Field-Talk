@@ -14,6 +14,5 @@ OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 OSHA_MATCH_THRESHOLD = "0.40"
 OSHA_MATCH_COUNT = "4"
 RESEND_FROM_NAME = "Field Talk"
-# Set RESEND_FROM_EMAIL to a verified Resend sender/domain email before enabling sends.
-# RESEND_FROM_EMAIL = "no-reply@example.com"
+RESEND_FROM_EMAIL = "no-reply@safetynetdispatch.com"
 # Store the API key with: wrangler secret put RESEND_API_KEY
