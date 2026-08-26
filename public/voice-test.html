@@ -119,7 +119,7 @@
 </div>
 
 <script>
-const BUILD = '2026-08-26.1';
+const BUILD = '2026-08-26.2';
 document.getElementById('build').textContent = BUILD;
 
 const $ = id => document.getElementById(id);
@@ -279,90 +279,143 @@ async function startRecording() {
   timerId = setInterval(() => { $('timer').textContent = fmt(Date.now() - startedAt); }, 100);
 }
 
+/**
+ * True length of the clip. Decoding the bytes is the reliable path: iOS Safari
+ * will not load metadata into a media element without a user gesture, so a
+ * media element is only a fallback for formats decodeAudioData refuses.
+ */
+function measureDuration(blob) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = d => { if (!settled) { settled = true; resolve(d); } };
+    const fail = m => { if (!settled) { settled = true; reject(new Error(m)); } };
+    setTimeout(() => fail('timed out'), 6000);
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const reader = new FileReader();
+
+    reader.onerror = () => mediaFallback();
+    reader.onload = () => {
+      let ctx;
+      try { ctx = new Ctx(); } catch (e) { return mediaFallback(); }
+      const close = () => { try { ctx.close(); } catch (e) {} };
+      try {
+        ctx.decodeAudioData(
+          reader.result,
+          buf => { close(); finish(buf.duration); },
+          () => { close(); mediaFallback(); }
+        );
+      } catch (e) { close(); mediaFallback(); }
+    };
+    reader.readAsArrayBuffer(blob);
+
+    function mediaFallback() {
+      const el = document.createElement('audio');
+      el.preload = 'metadata';
+      el.muted = true;
+      el.onloadedmetadata = () => {
+        if (isFinite(el.duration) && el.duration > 0) finish(el.duration);
+        else fail('duration not reported');
+      };
+      el.onerror = () => fail('could not decode');
+      el.src = URL.createObjectURL(blob);
+    }
+  });
+}
+
 function finishRecording() {
   clearInterval(timerId);
   if (hiddenAt) { hiddenMs += Date.now() - hiddenAt; hiddenAt = 0; }
 
   const wallMs = Date.now() - startedAt;
-  const blob = new Blob(chunks, { type: recorder.mimeType || preferredMime || 'audio/webm' });
+  const mime = recorder.mimeType || preferredMime || '(browser default)';
+  const blob = new Blob(chunks, { type: mime });
+  const url = URL.createObjectURL(blob);
   releaseStream();
 
   $('recBtn').textContent = 'Record again';
   $('recBtn').className = '';
   $('recLabel').textContent = 'stopped';
 
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio();
-  audio.preload = 'metadata';
+  // Everything except duration is known right now, so render it right now.
+  // Duration arrives later, or never, and must not hold the rest hostage.
+  Object.assign(diagnostics, {
+    recordedMime: mime,
+    requestedMime: preferredMime || '(browser default)',
+    wallClockSec: +(wallMs / 1000).toFixed(1),
+    blobBytes: blob.size,
+    chunkCount: chunks.length,
+    backgroundedSec: +(hiddenMs / 1000).toFixed(1),
+    audioDurationSec: null,
+    durationError: 'measuring…'
+  });
 
-  audio.onloadedmetadata = () => {
-    // Some browsers report Infinity for stream-recorded blobs; seek to force a real value.
-    if (audio.duration === Infinity || isNaN(audio.duration)) {
-      audio.currentTime = 1e101;
-      audio.ontimeupdate = () => { audio.ontimeupdate = null; audio.currentTime = 0; report(audio.duration); };
-    } else {
-      report(audio.duration);
-    }
-  };
-  audio.onerror = () => report(NaN);
-  audio.src = url;
+  render(null);
+  updateDump();
 
-  function report(audioDur) {
-    const kb = blob.size / 1024;
-    const kbps = audioDur > 0 ? (blob.size * 8) / audioDur / 1000 : NaN;
-    const durTxt = isFinite(audioDur) && audioDur > 0 ? audioDur.toFixed(1) + 's' : 'unreadable';
-    const drift = isFinite(audioDur) && audioDur > 0 ? (wallMs / 1000) - audioDur : NaN;
-
-    Object.assign(diagnostics, {
-      recordedMime: recorder.mimeType || '(default)',
-      wallClockSec: +(wallMs / 1000).toFixed(1),
-      audioDurationSec: isFinite(audioDur) ? +audioDur.toFixed(1) : null,
-      blobBytes: blob.size,
-      effectiveKbps: isFinite(kbps) ? +kbps.toFixed(1) : null,
-      backgroundedSec: +(hiddenMs / 1000).toFixed(1),
-      driftSec: isFinite(drift) ? +drift.toFixed(1) : null
+  measureDuration(blob)
+    .then(d => {
+      delete diagnostics.durationError;
+      diagnostics.audioDurationSec = +d.toFixed(1);
+      render(d);
+      updateDump();
+    })
+    .catch(err => {
+      diagnostics.durationError = err.message;
+      render(null);
+      updateDump();
     });
 
+  function render(audioDur) {
+    const known = isFinite(audioDur) && audioDur > 0;
+    const kb = blob.size / 1024;
+    const kbps = known ? (blob.size * 8) / audioDur / 1000 : NaN;
+    const drift = known ? (wallMs / 1000) - audioDur : NaN;
     const fiveMinMb = isFinite(kbps) ? ((kbps * 300) / 8 / 1024).toFixed(1) : '?';
+
+    if (known) diagnostics.effectiveKbps = +kbps.toFixed(1);
+    diagnostics.driftSec = isFinite(drift) ? +drift.toFixed(1) : null;
 
     $('result').innerHTML =
       '<div style="margin-top:14px">' +
-      row('Actual format', recorder.mimeType || '(default)') +
+      row('Actual format', mime, mime === preferredMime ? 'ok' : 'warn') +
       row('Wall clock', (wallMs / 1000).toFixed(1) + 's') +
-      row('Audio length', durTxt, isFinite(audioDur) && audioDur > 0 ? 'ok' : 'bad') +
-      row('File size', kb.toFixed(0) + ' KB') +
-      row('Bitrate', isFinite(kbps) ? kbps.toFixed(0) + ' kbps' : '?') +
-      row('A 5-min talk would be', '~' + fiveMinMb + ' MB') +
+      row('Audio length', known ? audioDur.toFixed(1) + 's'
+            : (diagnostics.durationError || 'unmeasurable'), known ? 'ok' : 'warn') +
+      row('File size', kb.toFixed(0) + ' KB', blob.size > 0 ? 'ok' : 'bad') +
+      row('Bitrate', isFinite(kbps) ? kbps.toFixed(0) + ' kbps' : '—') +
+      row('A 5-min talk would be', isFinite(kbps) ? '~' + fiveMinMb + ' MB' : '—') +
       '</div>';
 
     const player = document.createElement('audio');
-    player.controls = true; player.src = url;
+    player.controls = true;
+    player.preload = 'metadata';
+    player.src = url;
     $('result').appendChild(player);
 
     const hint = document.createElement('p');
     hint.className = 'hint';
     hint.style.marginTop = '10px';
-    hint.innerHTML = 'Play it back. If you can hear yourself clearly, browser recording works on this phone.';
+    hint.innerHTML = '<b>Play it back.</b> Hearing yourself clearly is the real pass condition &mdash; '
+      + 'a non-zero file size alone does not prove the audio is usable.';
     $('result').appendChild(hint);
 
-    // Background survival verdict
     let verdict, cls;
     if (hiddenMs < 500) {
-      verdict = 'Not tested yet — try locking the screen mid-recording.'; cls = 'warn';
-    } else if (!isFinite(drift)) {
-      verdict = 'Could not measure audio length.'; cls = 'warn';
+      verdict = 'Not tested yet — record again and lock the screen partway through.'; cls = 'warn';
+    } else if (!known) {
+      verdict = 'Backgrounded ' + (hiddenMs / 1000).toFixed(1) + 's, but audio length could not be measured.'; cls = 'warn';
     } else if (drift > 1.5) {
       verdict = 'Audio is ' + drift.toFixed(1) + 's short — recording STOPPED while backgrounded.'; cls = 'bad';
     } else {
       verdict = 'Audio matches wall clock — recording SURVIVED backgrounding.'; cls = 'ok';
     }
     diagnostics.backgroundVerdict = verdict;
+
     $('bg').innerHTML =
       row('Time backgrounded', (hiddenMs / 1000).toFixed(1) + 's') +
-      row('Missing audio', isFinite(drift) ? drift.toFixed(1) + 's' : '?') +
+      row('Missing audio', isFinite(drift) ? drift.toFixed(1) + 's' : '—') +
       row('Verdict', verdict, cls);
-
-    updateDump();
   }
 }
 
@@ -402,10 +455,15 @@ if (!SR) {
     recog.onresult = e => {
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) srFinal += t; else interim += t;
+        const t = e.results[i][0].transcript.trim();
+        if (!t) continue;
+        // Segments arrive without surrounding whitespace, so joining them raw
+        // welds the last word of one onto the first word of the next.
+        if (e.results[i].isFinal) srFinal += (srFinal ? ' ' : '') + t;
+        else interim += (interim ? ' ' : '') + t;
       }
-      $('transcript').innerHTML = srFinal + '<span class="interim">' + interim + '</span>';
+      $('transcript').innerHTML = srFinal + (srFinal && interim ? ' ' : '')
+        + '<span class="interim">' + interim + '</span>';
       diagnostics.speechResult = srFinal || interim;
     };
     recog.onerror = e => {
