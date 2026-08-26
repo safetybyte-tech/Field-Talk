@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileDown, Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search } from 'lucide-react';
+import { FileDown, Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search, Mic, MicOff } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee, StructuredTalkContent } from '../types';
 import { TALK_TEMPLATES } from '../data/templates';
@@ -11,6 +11,20 @@ import { logger } from '../utils/logger';
 import { auth } from '../utils/auth';
 import { User } from '../types';
 import { openTalkPdf, parseStructuredTalkContent } from '../utils/talkDocument';
+import { useDictation, isDictationSupported } from '../hooks/useDictation';
+
+// Dictation runs entirely on-device; only surface messages worth telling a foreman about.
+// Anything not listed here (including 'aborted', fired on our own stop() calls) stays silent.
+const DICTATION_ERROR_MESSAGES: Record<string, string> = {
+  'not-supported': "Dictation isn't available in this browser. Type your description instead.",
+  'not-allowed': 'Microphone access is blocked. Enable it in Settings to use dictation.',
+  'service-not-allowed': "Dictation isn't available here — please type instead.",
+  'no-speech': "Didn't catch that. Try again or type instead.",
+  'audio-capture': 'No microphone found on this device.',
+};
+
+// Support doesn't change during a session; check once rather than on every render.
+const DICTATION_SUPPORTED = isDictationSupported();
 
 interface WeatherAlert {
   title: string;
@@ -49,6 +63,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [showValidation, setShowValidation] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState<string>('');
   const [workDescription, setWorkDescription] = React.useState<string>('');
+  const [interimDictation, setInterimDictation] = React.useState('');
+  const [dictationError, setDictationError] = React.useState('');
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const [gptError, setGptError] = React.useState<string>('');
   const [rollcallStartTime, setRollcallStartTime] = React.useState<number | null>(null);
@@ -59,6 +75,30 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [structuredContent, setStructuredContent] = React.useState<StructuredTalkContent | null>(null);
   const [showDraftSelector, setShowDraftSelector] = React.useState(false);
   const rollcallLoggedTalkIdRef = React.useRef<string | null>(null);
+
+  const handleDictationResult = React.useCallback((text: string, isFinal: boolean) => {
+    if (isFinal) {
+      setWorkDescription((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+      setInterimDictation('');
+      setGptError('');
+    } else {
+      setInterimDictation(text);
+    }
+  }, []);
+
+  const handleDictationError = React.useCallback((error: string) => {
+    setInterimDictation('');
+    const message = DICTATION_ERROR_MESSAGES[error];
+    if (message) setDictationError(message);
+    if (error !== 'no-speech' && error !== 'aborted') {
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'dictation_error', { error });
+    }
+  }, [currentUser?.id, editedTalk.id]);
+
+  const { isListening: isDictating, start: startDictation, stop: stopDictation } = useDictation({
+    onResult: handleDictationResult,
+    onError: handleDictationError,
+  });
 
   // Common construction site locations for suggestions
   const commonLocations = [
@@ -241,6 +281,8 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   };
 
   const generateTalkingPoints = async () => {
+    stopDictation();
+
     if (!workDescription.trim()) {
       setGptError('Please describe the work being performed today');
       return;
@@ -624,18 +666,49 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
                   <Wrench size={16} className="inline mr-1" />
                   What work is being performed today?
                 </label>
-                <textarea
-                  value={workDescription}
-                  onChange={(e) => {
-                    setWorkDescription(e.target.value);
-                    setGptError(''); // Clear error when user types
-                  }}
-                  placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
-                  className="w-full p-3 border border-secondary-300 rounded-lg text-base resize-none"
-                  rows={3}
-                />
+                <div className="relative">
+                  <textarea
+                    value={workDescription}
+                    onChange={(e) => {
+                      setWorkDescription(e.target.value);
+                      setGptError(''); // Clear error when user types
+                      setDictationError('');
+                    }}
+                    placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
+                    className={`w-full p-3 border border-secondary-300 rounded-lg text-base resize-none ${DICTATION_SUPPORTED ? 'pr-12' : ''}`}
+                    rows={3}
+                  />
+                  {DICTATION_SUPPORTED && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDictationError('');
+                        if (isDictating) stopDictation();
+                        else startDictation();
+                      }}
+                      aria-label={isDictating ? 'Stop dictation' : 'Dictate work description'}
+                      className={`absolute right-2 top-2 p-2 rounded-full transition-colors ${
+                        isDictating
+                          ? 'bg-red-500 text-white animate-pulse'
+                          : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                      }`}
+                    >
+                      {isDictating ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
+                  )}
+                </div>
+
+                {isDictating && (
+                  <p className="text-sm text-secondary-500 italic mt-1">
+                    Listening{interimDictation ? `: ${interimDictation}` : '…'}
+                  </p>
+                )}
+
+                {dictationError && !isDictating && (
+                  <p className="text-sm text-amber-600 mt-1">{dictationError}</p>
+                )}
               </div>
-              
+
               {gptError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
                   {gptError}
