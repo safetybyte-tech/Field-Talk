@@ -1,8 +1,7 @@
 import React from 'react';
-import { FileDown, Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search, Mic, MicOff } from 'lucide-react';
+import { FileDown, Save, Send, Users, Cloud, Wrench, Sparkles, Loader2, Mail, Plus, Search, Mic, Square } from 'lucide-react';
 import { AlertTriangle, Info, AlertCircle, Zap } from 'lucide-react';
 import { ToolboxTalk, Attendee, StructuredTalkContent } from '../types';
-import { TALK_TEMPLATES } from '../data/templates';
 import { QuickAttendance } from './QuickAttendance';
 import { RecipientsSelector } from './RecipientsSelector';
 import { StructuredTalkDisplay } from './StructuredTalkDisplay';
@@ -58,7 +57,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   const [loadingWeather, setLoadingWeather] = React.useState(false);
   const [weatherAlerts, setWeatherAlerts] = React.useState<WeatherAlert[]>([]);
   const [weatherError, setWeatherError] = React.useState<string>('');
-  const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
   const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
   const [showValidation, setShowValidation] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState<string>('');
@@ -144,12 +142,16 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
   // Auto-populate weather on component mount if weather is empty
   React.useEffect(() => {
     const autoPopulateWeather = async () => {
-      if (!editedTalk.weather) {
+      if (!editedTalk.weather || !editedTalk.location) {
         setLoadingWeather(true);
         setWeatherError('');
         try {
           const weatherData = await getCachedWeather();
-          setEditedTalk(prev => ({ ...prev, weather: weatherData.description }));
+          setEditedTalk(prev => ({
+            ...prev,
+            weather: prev.weather || weatherData.description,
+            location: prev.location || weatherData.location || '',
+          }));
           setWeatherAlerts(weatherData.alerts || []);
         } catch (error) {
           console.warn('Could not auto-populate weather:', error);
@@ -161,7 +163,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     };
 
     autoPopulateWeather();
-  }, [editedTalk.weather]);
+  }, [editedTalk.weather, editedTalk.location]);
 
   // Check if content is structured JSON on component mount
   React.useEffect(() => {
@@ -183,7 +185,11 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
     setWeatherError('');
     try {
       const weatherData = await getCachedWeather(true); // Force fresh fetch
-      setEditedTalk(prev => ({ ...prev, weather: weatherData.description }));
+      setEditedTalk(prev => ({
+        ...prev,
+        weather: weatherData.description,
+        location: prev.location || weatherData.location || '',
+      }));
       setWeatherAlerts(weatherData.alerts || []);
     } catch (error) {
       console.warn('Could not refresh weather:', error);
@@ -417,29 +423,6 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
       setTimeout(() => setSaveStatus(''), 3000);
     }
   };
-  const loadTemplate = (templateId: string) => {
-    const template = TALK_TEMPLATES.find(t => t.id === templateId);
-    if (template) {
-      // Log template selection
-      logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { 
-        source: 'template_selection',
-        template_id: templateId,
-        template_title: template.title
-      });
-      
-      setSelectedTemplate(templateId);
-      setIsStructuredContent(false);
-      setStructuredContent(null);
-      setEditedTalk({
-        ...editedTalk,
-        title: template.title,
-        content: template.content
-      });
-      
-      // Clear selection after 2 seconds to show it was applied
-      setTimeout(() => setSelectedTemplate(null), 2000);
-    }
-  };
 
   const handleStructuredContentChange = (newContent: StructuredTalkContent) => {
     setStructuredContent(newContent);
@@ -632,133 +615,93 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({
         </div>
       )}
 
-      {/* Quick Template Selector */}
+      {/* Voice-first talk creation */}
       {!isSubmitted && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Quick Start Options:
-        </label>
-        <p className="text-sm text-gray-600 mb-4">
-          Choose a pre-made template or describe your work to generate custom safety content
-        </p>
-        
-        {/* AI-Generated Content Section */}
-        {hasUsedAI ? (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="text-green-600" size={20} />
-              <span className="font-semibold">Content Generated Successfully!</span>
+        <section className="rounded-2xl border-2 border-primary-200 bg-gradient-to-b from-primary-50 to-white p-5 sm:p-7">
+          {hasUsedAI ? (
+            <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="text-green-600" size={20} />
+                <span className="font-semibold">Your safety talk is ready to review</span>
+              </div>
+              <p className="text-sm">Review and edit the generated talk below before sending it.</p>
             </div>
-            <p className="text-sm">
-              Your custom safety talk has been generated below. Scroll down to review and edit the content.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-gradient-to-r from-primary-50 to-secondary-50 border-2 border-primary-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="text-primary-600" size={20} />
-              <h3 className="font-semibold text-primary-800">AI-Generated Toolbox Talk</h3>
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  <Wrench size={16} className="inline mr-1" />
-                  What work is being performed today?
-                </label>
-                <div className="relative">
-                  <textarea
-                    value={workDescription}
-                    onChange={(e) => {
-                      setWorkDescription(e.target.value);
-                      setGptError(''); // Clear error when user types
-                      setDictationError('');
-                    }}
-                    placeholder="e.g., Installing electrical conduit on 3rd floor, Concrete pour for foundation, Roofing installation, Excavation for utilities..."
-                    className={`w-full p-3 border border-secondary-300 rounded-lg text-base resize-none ${DICTATION_SUPPORTED ? 'pr-12' : ''}`}
-                    rows={3}
-                  />
-                  {DICTATION_SUPPORTED && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDictationError('');
-                        if (isDictating) stopDictation();
-                        else startDictation();
-                      }}
-                      aria-label={isDictating ? 'Stop dictation' : 'Dictate work description'}
-                      className={`absolute right-2 top-2 p-2 rounded-full transition-colors ${
-                        isDictating
-                          ? 'bg-red-500 text-white animate-pulse'
-                          : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
-                      }`}
-                    >
-                      {isDictating ? <MicOff size={18} /> : <Mic size={18} />}
-                    </button>
-                  )}
-                </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-secondary-900">Describe today’s work</h2>
+                <p className="mt-1 text-sm text-secondary-600">Record, review the transcript, then generate your safety talk.</p>
+              </div>
 
-                {isDictating && (
-                  <p className="text-sm text-secondary-500 italic mt-1">
-                    Listening{interimDictation ? `: ${interimDictation}` : '…'}
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDictationError('');
+                    if (isDictating) stopDictation();
+                    else startDictation();
+                  }}
+                  disabled={!DICTATION_SUPPORTED}
+                  aria-label={isDictating ? 'Stop recording' : 'Start recording'}
+                  className={`flex h-28 w-28 items-center justify-center rounded-full text-white shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary-400 ${
+                    isDictating
+                      ? 'bg-red-600 ring-4 ring-red-200 hover:bg-red-700 focus:ring-red-300'
+                      : 'bg-primary-600 hover:scale-105 hover:bg-primary-700 focus:ring-primary-300'
+                  }`}
+                >
+                  {isDictating ? <Square size={40} fill="currentColor" /> : <Mic size={48} />}
+                </button>
+                <p className="mt-3 font-semibold text-secondary-800">
+                  {isDictating ? 'Tap to stop recording' : 'Tap to start recording'}
+                </p>
+                {isDictating && <p className="mt-1 text-sm text-red-600 animate-pulse">Listening…</p>}
+              </div>
+
+              <div>
+                <label htmlFor="work-transcript" className="block text-sm font-semibold text-secondary-800 mb-2">
+                  Review and correct your transcript
+                </label>
+                <textarea
+                  id="work-transcript"
+                  value={workDescription}
+                  onChange={(e) => {
+                    setWorkDescription(e.target.value);
+                    setGptError('');
+                    setDictationError('');
+                  }}
+                  placeholder="Your recording will appear here. You can also type the work details."
+                  className="w-full min-h-32 p-4 border border-secondary-300 rounded-xl text-lg resize-y focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                  rows={4}
+                />
+                {interimDictation && (
+                  <p className="mt-2 rounded-lg bg-white px-3 py-2 text-sm italic text-secondary-500" aria-live="polite">
+                    Transcribing: {interimDictation}
                   </p>
                 )}
-
-                {dictationError && !isDictating && (
-                  <p className="text-sm text-amber-600 mt-1">{dictationError}</p>
+                {dictationError && <p className="text-sm text-amber-700 mt-2">{dictationError}</p>}
+                {!DICTATION_SUPPORTED && (
+                  <p className="text-sm text-amber-700 mt-2">Voice transcription is unavailable in this browser. You can type the description above.</p>
                 )}
               </div>
 
-              {gptError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
-                  {gptError}
-                </div>
-              )}
-              
+              {gptError && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">{gptError}</div>}
+
               <button
+                type="button"
                 onClick={generateTalkingPoints}
-                disabled={generatingContent || !workDescription.trim()}
-                className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                disabled={generatingContent || isDictating || !workDescription.trim()}
+                className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white py-4 px-4 rounded-xl text-lg font-semibold flex items-center justify-center gap-2 transition-colors"
               >
                 {generatingContent ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Generating Safety Content...
-                  </>
+                  <><Loader2 size={22} className="animate-spin" />Generating your safety talk…</>
                 ) : (
-                  <>
-                    <Sparkles size={20} />
-                    Generate Custom Safety Talk
-                  </>
+                  <><Sparkles size={22} />Generate Safety Talk</>
                 )}
               </button>
+              <p className="text-center text-xs text-secondary-500">Nothing is sent to AI until you press Generate Safety Talk.</p>
             </div>
-          </div>
-        )}
-        
-        {/* Pre-made Templates */}
-        {!hasUsedAI && (
-          <div>
-            <h4 className="font-medium text-secondary-700 mb-3">Or choose a pre-made template:</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {TALK_TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => loadTemplate(template.id)}
-                  className={`text-left p-3 rounded-lg border-2 transition-all duration-300 ${
-                    selectedTemplate === template.id
-                      ? 'bg-primary-100 border-primary-500 ring-2 ring-primary-300 shadow-md transform scale-105'
-                      : 'bg-secondary-50 border-secondary-200 hover:bg-secondary-100 hover:border-secondary-300'
-                  }`}
-                >
-                  <div className="font-medium">{template.title}</div>
-                  <div className="text-sm text-secondary-600">{template.category}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </section>
       )}
 
       {/* Basic Info */}

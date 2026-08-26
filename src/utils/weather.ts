@@ -24,6 +24,23 @@ interface WeatherApiResponse {
   };
 }
 
+interface ReverseGeocodingResponse {
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+  };
+}
+
+export interface SiteConditions {
+  description: string;
+  location?: string;
+  alerts?: WeatherAlert[];
+}
+
 interface NwsAlertFeature {
   properties: {
     headline?: string;
@@ -151,6 +168,24 @@ const fetchWeatherFromFreeAPI = async (lat: number, lon: number): Promise<Weathe
   }
 };
 
+const fetchLocationName = async (lat: number, lon: number): Promise<string | undefined> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    if (!response.ok) return undefined;
+
+    const data = (await response.json()) as ReverseGeocodingResponse;
+    const locality = data.address?.city || data.address?.town || data.address?.village ||
+      data.address?.municipality || data.address?.county;
+    return [locality, data.address?.state].filter(Boolean).join(', ') || undefined;
+  } catch (error) {
+    console.warn('Could not determine location name:', error);
+    return undefined;
+  }
+};
+
 // Helper functions for mapping alert severity and urgency
 const mapSeverity = (severity?: string): WeatherAlert['severity'] => {
   switch (severity?.toLowerCase()) {
@@ -169,16 +204,20 @@ const mapUrgency = (urgency?: string): WeatherAlert['urgency'] => {
   }
 };
 
-export const getCurrentWeather = async (): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
+export const getCurrentWeather = async (): Promise<SiteConditions> => {
   try {
     // Get user's location
     const coords = await getCurrentPosition();
     
     // Fetch weather data
-    const weather = await fetchWeatherFromFreeAPI(coords.latitude, coords.longitude);
+    const [weather, location] = await Promise.all([
+      fetchWeatherFromFreeAPI(coords.latitude, coords.longitude),
+      fetchLocationName(coords.latitude, coords.longitude),
+    ]);
     
     return {
       description: weather.description,
+      location,
       alerts: weather.alerts
     };
   } catch (error) {
@@ -200,10 +239,10 @@ export const getCurrentWeather = async (): Promise<{ description: string; alerts
 };
 
 // Get weather with caching to avoid repeated API calls
-let weatherCache: { data: { description: string; alerts?: WeatherAlert[] }; timestamp: number } | null = null;
+let weatherCache: { data: SiteConditions; timestamp: number } | null = null;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-export const getCachedWeather = async (forceRefresh: boolean = false): Promise<{ description: string; alerts?: WeatherAlert[] }> => {
+export const getCachedWeather = async (forceRefresh: boolean = false): Promise<SiteConditions> => {
   const now = Date.now(); // This is fine as it's used for cache timing, not display
   
   // Return cached weather if it's still fresh
