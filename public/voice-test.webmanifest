@@ -1,0 +1,19 @@
+{
+  "name": "Field Talk Voice Test",
+  "short_name": "Voice Test",
+  "description": "Diagnostic spike for browser audio recording and dictation on real devices.",
+  "start_url": "/voice-test.html",
+  "scope": "/voice-test.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/voice-test-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

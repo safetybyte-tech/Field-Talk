@@ -9,7 +9,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // The standalone voice-capture diagnostic page must serve itself, not the
+        // SPA shell that every other navigation falls back to.
+        navigateFallbackDenylist: [/^\/voice-test/]
       },
       manifest: {
         name: 'Field Talk - Toolbox Talk Generator',
