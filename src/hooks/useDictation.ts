@@ -59,6 +59,7 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
+  const interimRef = useRef('');
   onResultRef.current = onResult;
   onErrorRef.current = onError;
 
@@ -94,6 +95,7 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
         else interimText += (interimText ? ' ' : '') + transcript;
       }
       if (finalText) onResultRef.current(finalText, true);
+      interimRef.current = interimText;
       onResultRef.current(interimText, false);
     };
 
@@ -102,11 +104,18 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
     };
 
     recognition.onend = () => {
+      // Chrome can discard the last partial phrase when Stop is pressed.
+      // Preserve it so every recording reaches the editable transcript.
+      if (interimRef.current) {
+        onResultRef.current(interimRef.current, true);
+        interimRef.current = '';
+      }
       setIsListening(false);
       recognitionRef.current = null;
     };
 
     recognitionRef.current = recognition;
+    interimRef.current = '';
     recognition.start();
   }, []);
 
