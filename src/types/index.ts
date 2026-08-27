@@ -12,6 +12,13 @@ export interface ToolboxTalk {
   recipients: Recipient[];
   createdAt: number;
   submittedAt?: number;
+  /** Human review gate; optional for records created before this redesign. */
+  approved?: boolean;
+  approvedBy?: string;
+  approvedAt?: number;
+  drafted?: boolean;
+  notes?: string;
+  draftStep?: 1 | 2 | 3;
 }
 
 export interface Attendee {

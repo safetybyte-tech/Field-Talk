@@ -272,7 +272,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ground">
       <Header
         title={
           currentView === 'dashboard' ? 'Field Talk' :
@@ -322,26 +322,15 @@ function App() {
       )}
 
       {currentView === 'edit' && currentTalk && (
-        <div>
-          <div className="p-4">
-            <button
-              onClick={goToDashboard}
-              className="text-primary-600 hover:text-primary-800 font-medium"
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
-
-          <TalkEditor
-            talk={currentTalk}
-            onSave={saveTalk}
-            onSubmit={submitTalk}
-            recentNames={recentNames}
-            currentUser={user}
-            onRemoveRecentName={removeRecentName}
-            availableDrafts={talks.filter(t => !t.submittedAt && t.id !== currentTalk.id)}
-          />
-        </div>
+        <TalkEditor
+          talk={currentTalk}
+          onSave={saveTalk}
+          onSubmit={submitTalk}
+          recentNames={recentNames}
+          currentUser={user}
+          onRemoveRecentName={removeRecentName}
+          availableDrafts={talks.filter(t => !t.submittedAt && t.id !== currentTalk.id)}
+        />
       )}
     </div>
   );
