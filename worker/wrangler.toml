@@ -14,6 +14,11 @@ OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 # clearly relevant ones are missed.
 OSHA_MATCH_THRESHOLD = "0.40"
 OSHA_MATCH_COUNT = "4"
+# Experimental evidence-first generator. V1 remains the default route.
+# Enable only in a test Worker deployment after applying the Harness V2 migration.
+ENABLE_HARNESS_V2 = "false"
+HARNESS_V2_DAILY_LIMIT = "5"
+HARNESS_V2_PROMPT_VERSION = "2026-08-06"
 RESEND_FROM_NAME = "Field Talk"
 RESEND_FROM_EMAIL = "no-reply@safetynetdispatch.com"
 # Store the API key with: wrangler secret put RESEND_API_KEY
