@@ -12,7 +12,7 @@ import { openTalkPdf, parseStructuredTalkContent } from '../utils/talkDocument';
 import { useDictation, isDictationSupported } from '../hooks/useDictation';
 
 interface TalkEditorProps {
-  talk: ToolboxTalk; onSave: (talk: ToolboxTalk) => void; onSubmit: (talk: ToolboxTalk) => void; recentNames: string[];
+  talk: ToolboxTalk; onSave: (talk: ToolboxTalk) => void; onSubmit: (talk: ToolboxTalk) => Promise<void>; recentNames: string[];
   currentUser?: User | null; onRemoveRecentName: (name: string) => void; availableDrafts: ToolboxTalk[];
 }
 
@@ -27,6 +27,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
   const [drafting, setDrafting] = React.useState(false);
   const [error, setError] = React.useState('');
   const [sent, setSent] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
   const dictationSupported = isDictationSupported();
   const onDictationResult = React.useCallback((text: string, isFinal: boolean) => {
     if (!isFinal) return;
@@ -87,13 +88,25 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
     const content = parseStructuredTalkContent(template.content) || makeStructured(template.content); const next = { ...editedTalk, title: template.title, content: JSON.stringify(content), notes: notes || template.title, drafted: true, approved: false };
     setNotes(next.notes || ''); setStructured(content); setEditedTalk(next); onSave({ ...next, draftStep: 1 }); logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { source: 'template_selection', template_id: id });
   };
-  const proceed = () => {
+  const proceed = async () => {
+    if (sending) return;
+    setError('');
     if (step === 1) { if (!editedTalk.content.trim()) { setError('Write up your words or choose a starting point before moving on.'); return; } persist(editedTalk, 2); changeStep(2); }
     else if (step === 2) { persist(editedTalk, 3); changeStep(3); }
     else {
       if (!editedTalk.approved) { setError('Check the sign-off before sending. Nothing sends until you sign.'); return; }
       if (!editedTalk.title.trim() || !editedTalk.location.trim() || !editedTalk.weather.trim() || !editedTalk.attendees.length || !editedTalk.recipients.some((recipient) => recipient.selected)) { setError('Add the topic, location, weather, crew, and at least one recipient before sending.'); return; }
-      const finalTalk: ToolboxTalk = { ...editedTalk, notes, submittedAt: Date.now(), draftStep: 3 }; logger.logEvent(currentUser?.id || '', editedTalk.id, 'human_signature', { approved_by: finalTalk.approvedBy }); onSubmit(finalTalk); setSent(true);
+      const finalTalk: ToolboxTalk = { ...editedTalk, notes, submittedAt: Date.now(), draftStep: 3 };
+      logger.logEvent(currentUser?.id || '', editedTalk.id, 'human_signature', { approved_by: finalTalk.approvedBy });
+      setSending(true);
+      try {
+        await onSubmit(finalTalk);
+        setSent(true);
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : 'Sending failed. Please try again.');
+      } finally {
+        setSending(false);
+      }
     }
   };
   const updateAttendees = (attendees: Attendee[]) => setEditedTalk((current) => ({ ...current, attendees }));

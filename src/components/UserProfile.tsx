@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Mail, Save, Key } from 'lucide-react';
+import { ArrowLeft, User, Mail, Save, Key, LogOut } from 'lucide-react';
 import { User as UserType } from '../types';
 import { auth } from '../utils/auth';
 
@@ -7,12 +7,14 @@ interface UserProfileProps {
   user: UserType;
   onBack: () => void;
   onUpdateUser: (user: UserType) => void;
+  onLogout: () => void | Promise<void>;
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({
   user,
   onBack,
-  onUpdateUser
+  onUpdateUser,
+  onLogout
 }) => {
   const [editedUser, setEditedUser] = React.useState<UserType>(user);
   const [newPassword, setNewPassword] = React.useState('');
@@ -334,6 +336,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel
+          </button>
+        </div>
+
+        <div className="border-t pt-6">
+          <button
+            onClick={() => void onLogout()}
+            className="flex w-full items-center justify-center gap-2 border border-red-200 bg-red-50 px-4 py-3 font-medium text-red-700 transition-colors hover:bg-red-100"
+          >
+            <LogOut size={18} />
+            Sign out
           </button>
         </div>
       </div>

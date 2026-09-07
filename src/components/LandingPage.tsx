@@ -11,6 +11,14 @@ interface LandingPageProps {
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 
+function formatAuthError(error: unknown): string {
+  if (error instanceof Error && error.message === 'Failed to fetch') {
+    return "We couldn't reach the account service. Check your connection and try again. If it keeps happening, contact your site administrator.";
+  }
+
+  return error instanceof Error ? error.message : 'An error occurred. Please try again.';
+}
+
 export const LandingPage: React.FC<LandingPageProps> = ({
   onLogin,
   isRecoveryMode = false,
@@ -99,7 +107,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      setError(formatAuthError(err));
     } finally {
       setLoading(false);
     }

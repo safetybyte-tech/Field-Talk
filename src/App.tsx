@@ -192,7 +192,7 @@ function App() {
   };
 
   const submitTalk = async (talk: ToolboxTalk) => {
-    if (!user) return;
+    if (!user) throw new Error('Please sign in again before sending.');
     setSubmitStatus('Submitting...');
 
     logger.logEvent(user.id, talk.id, 'send_tapped', { ts: Date.now() });
@@ -219,6 +219,7 @@ function App() {
       });
       setSubmitStatus(error instanceof Error ? `Failed to submit: ${error.message}` : 'Failed to submit. Please try again.');
       setTimeout(() => setSubmitStatus(''), 3000);
+      throw error;
     }
   };
 
@@ -318,6 +319,7 @@ function App() {
           user={user}
           onBack={goToDashboard}
           onUpdateUser={updateUser}
+          onLogout={handleLogout}
         />
       )}
 
