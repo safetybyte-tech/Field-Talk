@@ -1,12 +1,15 @@
 import { ToolboxTalk, Attendee } from '../types';
 import { supabase } from './supabase';
+import { encodeTalkContent, decodeTalkContent } from './talkMetadata';
 
 // Convert DB row to ToolboxTalk
 function rowToTalk(row: Record<string, unknown>): ToolboxTalk {
+  const decoded = decodeTalkContent(row.content as string);
   return {
+    ...decoded.metadata,
     id: row.id as string,
     title: row.title as string,
-    content: row.content as string,
+    content: decoded.content,
     date: row.date as string,
     location: row.location as string,
     projectNumber: (row.project_number as string) || '',
@@ -25,7 +28,7 @@ function talkToRow(talk: ToolboxTalk, userId: string) {
   return {
     user_id: userId,
     title: talk.title,
-    content: talk.content,
+    content: encodeTalkContent(talk),
     date: talk.date,
     location: talk.location,
     project_number: talk.projectNumber,
