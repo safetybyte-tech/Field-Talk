@@ -1,3 +1,5 @@
+import type { HarnessReview } from '../utils/harness';
+
 export interface ToolboxTalk {
   id: string;
   title: string;
@@ -19,6 +21,7 @@ export interface ToolboxTalk {
   drafted?: boolean;
   notes?: string;
   draftStep?: 1 | 2 | 3;
+  harness?: HarnessReview;
 }
 
 export interface Attendee {
