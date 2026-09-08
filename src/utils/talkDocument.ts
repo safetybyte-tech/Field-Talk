@@ -1,5 +1,7 @@
 import { StructuredTalkContent, ToolboxTalk } from '../types';
 import { jsPDF } from 'jspdf';
+import { citationsHtml, officialCitations } from './citations';
+import { harnessMessages } from './harness';
 
 type StructuredTalkKey = keyof StructuredTalkContent;
 
@@ -213,6 +215,7 @@ export const buildTalkDocumentHtml = (talk: ToolboxTalk): string => {
   </section>
 
   ${structuredContent ? renderStructuredContent(structuredContent) : renderPlainContent(talk.content)}
+  ${citationsHtml(structuredContent?.citations)}
 
   <section class="table-section">
     <h2>Attendance</h2>
@@ -320,6 +323,8 @@ export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
   };
 
   const writeParagraph = (value: string, fontSize = 10) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(fontSize);
     const lines = pdf.splitTextToSize(pdfSafeText(value), contentWidth) as string[];
     writeLines(lines, fontSize);
     y += 1.5;
@@ -327,6 +332,8 @@ export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
 
   const writeHeading = (value: string, level: 1 | 2 = 2) => {
     const fontSize = level === 1 ? 18 : 12;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(fontSize);
     const lines = pdf.splitTextToSize(pdfSafeText(value), contentWidth) as string[];
     ensureSpace(lines.length * (level === 1 ? 7 : 6) + 4);
     pdf.setTextColor(26, 26, 26);
@@ -336,6 +343,8 @@ export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
   };
 
   const writeBullets = (items: string[]) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
     items.filter((item) => item.trim()).forEach((item) => {
       const lines = pdf.splitTextToSize(pdfSafeText(item), contentWidth - 5) as string[];
       lines.forEach((line, index) => {
@@ -350,6 +359,7 @@ export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
 
   pdf.setTextColor(249, 115, 22);
   writeLines(['SAFETY NET DISPATCH · FIELD TALK'], 9, true);
+  y += 3;
   pdf.setTextColor(26, 26, 26);
   writeHeading(talk.title || 'Toolbox Talk Record', 1);
   pdf.setTextColor(75, 81, 88);
@@ -393,6 +403,32 @@ export const createTalkPdf = (talk: ToolboxTalk): jsPDF => {
     const paragraphs = talk.content.split(/\n{2,}/).filter((paragraph) => paragraph.trim());
     if (paragraphs.length) paragraphs.forEach((paragraph) => writeParagraph(paragraph));
     else writeParagraph('No talk content recorded.');
+  }
+
+  const citations = officialCitations(structuredContent?.citations);
+  if (citations.length) {
+    writeHeading('Referenced OSHA Standards');
+    citations.forEach(citation => {
+      ensureSpace(12);
+      writeParagraph(`29 CFR ${citation.citation}`, 9);
+      pdf.setFontSize(8);
+      const lines = pdf.splitTextToSize(citation.source_url, contentWidth) as string[];
+      lines.forEach(line => {
+        ensureSpace(4.8);
+        pdf.setTextColor(30, 64, 175);
+        pdf.textWithLink(line, margin, y, { url: citation.source_url });
+        y += 4.8;
+      });
+      pdf.setTextColor(26, 26, 26);
+      y += 1.5;
+    });
+    writeParagraph('Source text is unofficial. Verify requirements against the linked official standards.', 9);
+  }
+  if (talk.harness) {
+    writeHeading('V2 Draft Review');
+    writeParagraph('Automated checks are not a safety approval. Human review is required.', 9);
+    const messages = harnessMessages(talk.harness);
+    if (messages.length) writeBullets(messages);
   }
 
   writeHeading('Attendance');

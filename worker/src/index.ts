@@ -1,3 +1,5 @@
+import { citationsHtml, officialCitations } from '../../src/utils/citations';
+
 interface Env {
   OPENAI_API_KEY: string;
   OPENAI_MODEL?: string;
@@ -539,6 +541,7 @@ function renderStructuredText(content: StructuredTalkContent): string {
   return [
     `Introduction\n${content.i}`,
     ...sections.map(([title, items]) => `${title}\n${items.map((item) => `- ${item}`).join('\n')}`),
+    ...officialCitations(content.citations).map(c => `29 CFR ${c.citation}: ${c.source_url}`),
   ].join('\n\n');
 }
 
@@ -565,6 +568,7 @@ function renderStructuredHtml(content: StructuredTalkContent): string {
         </section>
       `)
       .join('')}
+    ${citationsHtml(content.citations)}
   `;
 }
 
