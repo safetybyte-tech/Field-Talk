@@ -1,3 +1,4 @@
+import { AutoSizeTextarea } from './AutoSizeTextarea';
 import React from 'react';
 import { AlertTriangle, Shield, CheckCircle, Wrench, HelpCircle, FileText, ExternalLink, Scale } from 'lucide-react';
 import { StructuredTalkContent, TalkCitation } from '../types';
@@ -13,8 +14,8 @@ const CitationBadges: React.FC<{ citations: TalkCitation[] }> = ({ citations }) 
           href={citation.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          title={`${citation.subpart_title || 'OSHA standard'} — view on eCFR (unofficial text; verify against the official CFR)`}
-          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-700"
+          title={`${citation.title || citation.subpart_title || 'OSHA standard'} — view on eCFR (unofficial text; verify against the official CFR)`}
+          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white min-h-11 px-3 py-2 text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-700"
         >
           <ExternalLink size={10} />
           29 CFR {citation.citation}
@@ -58,7 +59,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
   const addArrayItem = (field: keyof StructuredTalkContent) => {
     if (onContentChange && Array.isArray(content[field])) {
       const currentArray = content[field] as string[];
-      if (currentArray.length < 4) {
+      {
         onContentChange({
           ...content,
           [field]: [...currentArray, '']
@@ -141,11 +142,11 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
           <h3 className="text-lg font-semibold text-gray-800">Introduction</h3>
         </div>
         {isEditable ? (
-          <textarea
+          <AutoSizeTextarea
+            aria-label="Introduction"
             value={content.i}
             onChange={(e) => updateContent('i', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg text-base leading-relaxed resize-none"
-            rows={2}
             placeholder="1-2 sentences introducing the task and safety importance..."
           />
         ) : (
@@ -161,15 +162,16 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
         
         return (
           <div key={section.key} className={`${section.bgColor} border ${section.borderColor} rounded-lg p-4`}>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <Icon className={section.color} size={20} />
                 <h3 className={`text-lg font-semibold ${section.color}`}>{section.title}</h3>
               </div>
-              {isEditable && items.length < 4 && (
+              {isEditable && (
                 <button
                   onClick={() => addArrayItem(section.key)}
-                  className={`${section.color} hover:opacity-70 text-sm font-medium`}
+                  aria-label={`Add ${section.title} item`}
+                  className={`${section.color} min-h-11 shrink-0 px-2 hover:opacity-70 text-sm font-medium`}
                 >
                   + Add Item
                 </button>
@@ -182,18 +184,18 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
                   <li key={index} className="flex items-start gap-2">
                     <span className={`${section.color} mt-1`}>•</span>
                     {isEditable ? (
-                      <div className="flex-1 flex gap-2">
-                        <input
-                          type="text"
+                      <div className="min-w-0 flex-1 flex items-start gap-2">
+                        <AutoSizeTextarea
+                          aria-label={`${section.title} item ${index + 1}`}
                           value={item}
                           onChange={(e) => updateArrayItem(section.key, index, e.target.value)}
-                          className="flex-1 p-2 border border-gray-300 rounded text-sm"
-                          placeholder="Enter safety point (≤12 words)..."
-                          maxLength={80}
+                          className="min-w-0 w-full flex-1 min-h-11 p-2 border border-gray-300 rounded text-base leading-relaxed"
+                          placeholder="Add a specific safety action..."
                         />
                         <button
                           onClick={() => removeArrayItem(section.key, index)}
-                          className="text-red-500 hover:text-red-700 text-sm px-2"
+                          aria-label={`Remove ${section.title} item ${index + 1}`}
+                          className="shrink-0 min-h-11 min-w-11 text-red-600 hover:text-red-700 text-lg px-2"
                         >
                           ×
                         </button>
@@ -231,7 +233,7 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
                   29 CFR {citation.citation}
                   <ExternalLink size={12} />
                 </a>
-                {citation.subpart_title ? ` — ${citation.subpart_title}` : ''}
+                {citation.title || citation.subpart_title ? ` — ${citation.title || citation.subpart_title}` : ''}
               </li>
             ))}
           </ul>
