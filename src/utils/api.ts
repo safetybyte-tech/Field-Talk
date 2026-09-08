@@ -1,7 +1,7 @@
 import { ToolboxTalk } from '../types';
 import { auth } from './auth';
 import { storage } from './storage';
-import { createTalkPdfAttachment } from './talkDocument';
+import { hasCurrentApproval } from './recordReview';
 
 const workerEndpoint = (path: string): string => {
   const workerUrl = import.meta.env.VITE_WORKER_URL;
@@ -13,6 +13,7 @@ const workerEndpoint = (path: string): string => {
 };
 
 const sendTalkEmail = async (talk: ToolboxTalk): Promise<void> => {
+  if (!hasCurrentApproval(talk)) throw new Error('Review this version and sign again before sending.');
   const accessToken = await auth.getAccessToken();
   if (!accessToken) {
     throw new Error('Not authenticated. Please sign in again.');
@@ -24,7 +25,7 @@ const sendTalkEmail = async (talk: ToolboxTalk): Promise<void> => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ talk, pdf: createTalkPdfAttachment(talk) }),
+    body: JSON.stringify({ talk }),
   });
 
   if (!response.ok) {

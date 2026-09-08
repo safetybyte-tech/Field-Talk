@@ -1,13 +1,13 @@
 import type { ToolboxTalk } from '../types';
 import { parseHarnessReview } from './harness';
 
-type Metadata = Pick<ToolboxTalk, 'notes' | 'draftStep' | 'drafted' | 'approved' | 'approvedBy' | 'approvedAt' | 'harness'>;
+type Metadata = Pick<ToolboxTalk, 'notes' | 'draftStep' | 'drafted' | 'approved' | 'approvedBy' | 'approvedAt' | 'approvedByUserId' | 'approvedRecord' | 'harness'>;
 
 // Keep workflow metadata with the existing content column, including on older databases.
 export function encodeTalkContent(talk: ToolboxTalk): string {
-  const { notes, draftStep, drafted, approved, approvedBy, approvedAt, harness } = talk;
+  const { notes, draftStep, drafted, approved, approvedBy, approvedAt, approvedByUserId, approvedRecord, harness } = talk;
   return JSON.stringify({ fieldTalkRecordVersion: 1, content: talk.content,
-    metadata: { notes, draftStep, drafted, approved, approvedBy, approvedAt, harness } });
+    metadata: { notes, draftStep, drafted, approved, approvedBy, approvedAt, approvedByUserId, approvedRecord, harness } });
 }
 
 export function decodeTalkContent(content: string): { content: string; metadata: Metadata } {
@@ -22,6 +22,8 @@ export function decodeTalkContent(content: string): { content: string; metadata:
         approved: m.approved === true,
         approvedBy: typeof m.approvedBy === 'string' ? m.approvedBy : undefined,
         approvedAt: typeof m.approvedAt === 'number' ? m.approvedAt : undefined,
+        approvedByUserId: typeof m.approvedByUserId === 'string' ? m.approvedByUserId : undefined,
+        approvedRecord: typeof m.approvedRecord === 'string' ? m.approvedRecord : undefined,
         harness: parseHarnessReview(m.harness),
       } };
     }

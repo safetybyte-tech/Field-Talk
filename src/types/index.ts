@@ -18,6 +18,8 @@ export interface ToolboxTalk {
   approved?: boolean;
   approvedBy?: string;
   approvedAt?: number;
+  approvedByUserId?: string;
+  approvedRecord?: string;
   drafted?: boolean;
   notes?: string;
   draftStep?: 1 | 2 | 3;
@@ -50,6 +52,7 @@ export interface TalkTemplate {
 export interface TalkCitation {
   citation: string; // e.g. "1926.501"
   subpart_title: string; // e.g. "Fall Protection"
+  title?: string; // Specific section title, not just its subpart
   source_url: string; // eCFR link for verification
   sections: string[]; // section keys ("i", "hazards", ...) that used this citation
 }
@@ -57,8 +60,8 @@ export interface TalkCitation {
 export interface StructuredTalkContent {
   i: string; // Introduction (1-2 sentences)
   hazards: string[]; // Hazards (max 4 items, ≤12 words each)
-  practices: string[]; // Personal Protective Equipment (max 4 items, ≤12 words each)
-  ppe: string[]; // Pre-task planning (max 4 items, ≤12 words each)
+  practices: string[]; // Pre-task planning
+  ppe: string[]; // Personal protective equipment
   sif: string[]; // Serious injury/fatality prevention (max 4 items, ≤12 words each)
   manual: string[]; // Material handling (max 4 items, ≤12 words each)
   q: string[]; // Questions (max 4 items, ≤12 words each)
