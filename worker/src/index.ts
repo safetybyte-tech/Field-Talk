@@ -153,11 +153,13 @@ const structuredTalkSchema = {
     },
     sif: {
       type: 'array',
+      description: 'Serious injury and fatality PREVENTION: specific life-critical actions and controls, not a list of injuries or consequences.',
       maxItems: 4,
       items: { type: 'string' },
     },
     manual: {
       type: 'array',
+      description: 'Material handling: task-specific controls for lifting, carrying, moving, securing, or storing materials. This field does not mean manuals or reference documents.',
       maxItems: 4,
       items: { type: 'string' },
     },
