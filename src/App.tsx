@@ -1,7 +1,7 @@
 import React from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
-import { TalkEditor } from './components/TalkEditor';
+import { TalkEditor, type TalkEditorHandle } from './components/TalkEditor';
 import { Outbox } from './components/Outbox';
 import { LandingPage } from './components/LandingPage';
 import { UserProfile } from './components/UserProfile';
@@ -47,6 +47,8 @@ function App() {
   const [currentTalk, setCurrentTalk] = React.useState<ToolboxTalk | null>(null);
   const [recentNames, setRecentNames] = React.useState<string[]>([]);
   const [submitStatus, setSubmitStatus] = React.useState<string>('');
+  const editorRef = React.useRef<TalkEditorHandle>(null);
+  const [dataError, setDataError] = React.useState('');
 
   const loadData = React.useCallback(async (userId: string) => {
     try {
@@ -54,10 +56,12 @@ function App() {
         storage.getTalks(userId),
         storage.getRecentAttendees(userId),
       ]);
+      setDataError('');
       setTalks(fetchedTalks);
       setRecentNames(fetchedNames);
     } catch (err) {
       console.error('Failed to load data:', err);
+      setDataError('Your records could not be loaded. Please retry.');
     }
   }, []);
 
@@ -177,18 +181,22 @@ function App() {
     }
   };
 
-  const saveTalk = async (talk: ToolboxTalk) => {
-    if (!user) return;
-    const saved = await storage.saveTalk(talk, user.id);
-    await storage.saveRecentAttendees(talk.attendees, user.id);
-    // Update current talk with persisted ID if it was new
-    if (talk.id !== saved.id) {
-      setCurrentTalk(saved);
+  const rememberAttendees = async (talk: ToolboxTalk, userId: string) => {
+    try {
+      await storage.saveRecentAttendees(talk.attendees, userId);
+      setRecentNames(await storage.getRecentAttendees(userId));
+    } catch (error) {
+      // A convenience-list failure must not turn a confirmed save/send into a retry.
+      console.warn('Could not update recent crew:', error);
     }
-    setTalks(await storage.getTalks(user.id));
-    setRecentNames(await storage.getRecentAttendees(user.id));
-    setSubmitStatus('Talk saved');
-    setTimeout(() => setSubmitStatus(''), 3000);
+  };
+
+  const saveTalk = async (talk: ToolboxTalk): Promise<ToolboxTalk> => {
+    if (!user) throw new Error('Please sign in again before saving.');
+    const saved = await storage.saveTalk(talk, user.id);
+    setTalks(current => [saved, ...current.filter(item => item.id !== talk.id && item.id !== saved.id)]);
+    void rememberAttendees(talk, user.id);
+    return saved;
   };
 
   const submitTalk = async (talk: ToolboxTalk) => {
@@ -200,17 +208,16 @@ function App() {
 
     try {
       const saved = await api.submitTalk(talk, user.id);
-      await storage.saveRecentAttendees(talk.attendees, user.id);
+      void rememberAttendees(talk, user.id);
       const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       logger.logEvent(user.id, saved.id, 'send_success', { latency_ms: latencyMs });
 
       setSubmitStatus('Toolbox talk submitted successfully!');
-      setTalks(await storage.getTalks(user.id));
-      setRecentNames(await storage.getRecentAttendees(user.id));
+      setTalks(current => [saved, ...current.filter(item => item.id !== talk.id && item.id !== saved.id)]);
       setTimeout(() => {
         setSubmitStatus('');
-        setCurrentView('dashboard');
       }, 2000);
+      return saved;
     } catch (error) {
       const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       logger.logEvent(user.id, talk.id, 'send_failed', {
@@ -228,22 +235,13 @@ function App() {
     setCurrentTalk(null);
   };
 
-  const saveAndGoToDashboard = () => {
-    if (currentTalk) {
-      saveTalk(currentTalk);
-    }
-    goToDashboard();
-  };
-
-  const showOutbox = () => {
-    setCurrentView('outbox');
+  const navigate = async (view: ViewType) => {
+    if (currentView === 'edit' && !(await editorRef.current?.saveBeforeLeave())) return;
+    setCurrentView(view);
     setCurrentTalk(null);
   };
-
-  const showProfile = () => {
-    setCurrentView('profile');
-    setCurrentTalk(null);
-  };
+  const showOutbox = () => { void navigate('outbox'); };
+  const showProfile = () => { void navigate('profile'); };
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
@@ -288,7 +286,7 @@ function App() {
         onEditProfile={showProfile}
         onShowOutbox={showOutbox}
         talks={talks}
-        onTitleClick={currentView === 'edit' ? saveAndGoToDashboard : undefined}
+        onTitleClick={() => { void navigate('dashboard'); }}
       />
 
       {submitStatus && (
@@ -297,7 +295,10 @@ function App() {
         </div>
       )}
 
-      {currentView === 'dashboard' && (
+      {dataError && <div role="alert" className="mx-auto max-w-[760px] p-5 text-stop-text">
+        {dataError} <button className="min-h-11 underline" onClick={() => user && void loadData(user.id)}>Retry loading records</button>
+      </div>}
+      {currentView === 'dashboard' && !dataError && (
         <Dashboard
           talks={talks}
           onNewTalk={createNewTalk}
@@ -325,6 +326,8 @@ function App() {
 
       {currentView === 'edit' && currentTalk && (
         <TalkEditor
+          ref={editorRef}
+          onDone={goToDashboard}
           talk={currentTalk}
           onSave={saveTalk}
           onSubmit={submitTalk}

@@ -13,6 +13,6 @@ export function Fixture() {
   const [saved, setSaved] = React.useState<ToolboxTalk>(talk);
   const [revision, setRevision] = React.useState(0);
   const [result, setResult] = React.useState('Local fixture; nothing is sent.');
-  return <><header className="mx-auto max-w-[760px] px-5 pt-4"><p role="status">{result}</p><button className="min-h-11 border px-3" onClick={() => { setTalk(saved); setRevision(n => n + 1); }}>Reopen saved draft</button></header><TalkEditor key={revision} talk={talk} currentUser={{ ...user, username: 'qa', createdAt: 0 }} recentNames={[]} availableDrafts={[]} onRemoveRecentName={() => undefined} onSave={next => { setSaved(next); setResult(`Saved locally; approval ${next.approved ? 'checked' : 'clear'}.`); }} onSubmit={async () => { setResult('Mock submission only; no email sent.'); }} /></>;
+  return <><header className="mx-auto max-w-[760px] px-5 pt-4"><p role="status">{result}</p><button className="min-h-11 border px-3" onClick={() => { setTalk(saved); setRevision(n => n + 1); }}>Reopen saved draft</button></header><TalkEditor key={revision} talk={talk} currentUser={{ ...user, username: 'qa', createdAt: 0 }} recentNames={[]} availableDrafts={[]} onRemoveRecentName={() => undefined} onSave={async next => { setSaved(next); setResult(`Saved locally; approval ${next.approved ? 'checked' : 'clear'}.`); }} onSubmit={async () => { setResult('Mock submission only; no email sent.'); }} /></>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture />);
