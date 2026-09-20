@@ -20,6 +20,7 @@ Scope: existing product, synthetic local accounts/services. Earlier draft/mobile
 | RR-14 | P1 | Mixed frontend/Worker versions could use old send-then-file semantics during rollout. | Versioned /v2/send-talk endpoint; legacy /send-talk returns 426 before sending. No unsafe fallback. Legacy-client rejection regression passes. |
 | RR-15 | P2 | PR review: unchanged saved draft cannot leave Home/Records/Profile when an unnecessary save fails. | Reproduced all three failures; clean drafts now leave without a write. Both-engine navigation regressions pass. |
 | RR-16 | P2 | PR review: saving an older record prepends it ahead of newer records. | Shared saved-record merge retains createdAt descending / ID tie order and replaces temporary IDs. Record-order tests pass. |
+| RR-17 | P1 | Opening a legacy filed record with a blank supervisor substitutes the current profile into its PDF. | Reproduced in a downloaded PDF. Prevent all automatic field fills on filed/pending snapshots; both-engine PDF-content regression passes. |
 
 ## Iterations and stop condition
 
@@ -28,7 +29,8 @@ Scope: existing product, synthetic local accounts/services. Earlier draft/mobile
 3. Added five UI defect reproductions: all failed before fixes, then all ten engine runs passed.
 4. Expanded auth, filed-record, pagination, timer, install-asset, dependency and speech checks. Fixed the lint/Miniflare compatibility failures introduced by dependency patching.
 5. Read open GitHub issues (none) and existing PR review threads; reproduced/fixed both reported findings (RR-15/16).
-6. Ran two full browser passes (96 checks), repeated delivery checks (16), repeated mobile checks (12), and a final browser pass after endpoint hardening. No known failing local regression remains. Exact final results and external blockers are in ACCEPTANCE-RESULTS.md.
+6. Reproduced/fixed automatic supervisor substitution in a legacy filed PDF (RR-17).
+7. Ran two full browser passes (96 checks), repeated delivery checks (16), repeated mobile checks (12), and a final browser pass after endpoint hardening. No known failing local regression remains. Exact final results and external blockers are in ACCEPTANCE-RESULTS.md.
 
 ## External acceptance still open
 

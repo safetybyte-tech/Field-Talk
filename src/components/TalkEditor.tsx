@@ -27,7 +27,7 @@ export interface TalkEditorHandle { saveBeforeLeave: () => Promise<boolean>; }
 export const TalkEditor = React.forwardRef<TalkEditorHandle, TalkEditorProps>(function TalkEditor({ talk, onSave, onSubmit, recentNames, currentUser, onRemoveRecentName, onDone }, ref) {
   const [editedTalk, setEditedTalkState] = React.useState<ToolboxTalk>(talk);
   const setEditedTalk = React.useCallback((update: React.SetStateAction<ToolboxTalk>) => {
-    setEditedTalkState(current => changeRecord(current, typeof update === 'function' ? update(current) : update));
+    setEditedTalkState(current => current.submittedAt || current.deliveryPending ? current : changeRecord(current, typeof update === 'function' ? update(current) : update));
   }, []);
   const notes = editedTalk.notes || '';
   const setNotes = React.useCallback((update: React.SetStateAction<string>) => {

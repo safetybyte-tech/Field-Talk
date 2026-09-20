@@ -112,3 +112,14 @@ for (const destination of ['Go to Field Talk home', 'Open records', 'Open QA Rev
     expect(await page.evaluate(() => window.fixture.saves.length)).toBe(0);
   });
 }
+
+test('opening a legacy filed record does not replace its blank supervisor with the current profile', async ({ page }) => {
+  await page.goto('/tests/fixtures/app.html?history');
+  await page.evaluate(() => { window.fixture.talks[0].supervisor = ''; window.fixture.talks[0].supervisorEmail = ''; });
+  await page.getByRole('button', { name: /Filed record 1 .*Sent/ }).click();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Read it in full', exact: true }).click();
+  const { readFile } = await import('node:fs/promises');
+  const pdf = await readFile(await (await download).path());
+  expect(pdf.toString('latin1')).not.toContain('QA Reviewer');
+});
