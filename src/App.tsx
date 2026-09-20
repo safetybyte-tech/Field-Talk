@@ -6,6 +6,7 @@ import { Outbox } from './components/Outbox';
 import { LandingPage } from './components/LandingPage';
 import { UserProfile } from './components/UserProfile';
 import { ToolboxTalk, User } from './types';
+import { mergeSavedTalk } from './utils/talkRecords';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
@@ -227,7 +228,7 @@ function App() {
     const session = sessionVersion.current;
     const saved = await storage.saveTalk(talk, user.id);
     if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
-    setTalks(current => [saved, ...current.filter(item => item.id !== talk.id && item.id !== saved.id)]);
+    setTalks(current => mergeSavedTalk(current, saved, talk.id));
     void rememberAttendees(talk, user.id);
     return saved;
   };
@@ -248,7 +249,7 @@ function App() {
       logger.logEvent(user.id, saved.id, 'send_success', { latency_ms: latencyMs });
 
       setSubmitStatus('Toolbox talk submitted successfully!');
-      setTalks(current => [saved, ...current.filter(item => item.id !== talk.id && item.id !== saved.id)]);
+      setTalks(current => mergeSavedTalk(current, saved, talk.id));
       setTimeout(() => {
         if (session === sessionVersion.current) setSubmitStatus('');
       }, 2000);

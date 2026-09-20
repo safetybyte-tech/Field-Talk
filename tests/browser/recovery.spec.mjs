@@ -101,3 +101,14 @@ test('leaving a saved profile cancels its delayed return navigation', async ({ p
   await page.waitForTimeout(1750); // cross the old profile's delayed navigation deadline
   await expect(page.getByRole('textbox', { name: 'Your words' })).toHaveValue('Keep this new draft open');
 });
+
+for (const destination of ['Go to Field Talk home', 'Open records', 'Open QA Reviewer profile']) {
+  test(`unchanged saved draft can navigate to ${destination} when saving is unavailable`, async ({ page }) => {
+    await page.goto('/tests/fixtures/app.html');
+    await page.getByRole('button', { name: /Unfinished/ }).click();
+    await page.evaluate(() => { window.fixture.failSave = true; });
+    await page.getByRole('button', { name: destination, exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Topic' })).not.toBeVisible();
+    expect(await page.evaluate(() => window.fixture.saves.length)).toBe(0);
+  });
+}

@@ -18,6 +18,8 @@ Scope: existing product, synthetic local accounts/services. Earlier draft/mobile
 | RR-12 | P2 | Root/Worker dependency audits report advisories. | Patched compatible dependencies plus Vite 6.4.3 and aligned Worker tooling. Audit reports zero vulnerabilities in both projects. Lint/runtime incompatibilities exposed by upgrades were fixed and retested. |
 | RR-13 | P2 | Synchronous speech startup failure escapes the UI; repeated starts can overlap recognition sessions. | Startup errors become usable typed fallback; one active session; cleanup ignores late events. Simulated permission-denied startup and partial-transcript stop pass in both phone profiles. Actual microphones remain untested. |
 | RR-14 | P1 | Mixed frontend/Worker versions could use old send-then-file semantics during rollout. | Versioned /v2/send-talk endpoint; legacy /send-talk returns 426 before sending. No unsafe fallback. Legacy-client rejection regression passes. |
+| RR-15 | P2 | PR review: unchanged saved draft cannot leave Home/Records/Profile when an unnecessary save fails. | Reproduced all three failures; clean drafts now leave without a write. Both-engine navigation regressions pass. |
+| RR-16 | P2 | PR review: saving an older record prepends it ahead of newer records. | Shared saved-record merge retains createdAt descending / ID tie order and replaces temporary IDs. Record-order tests pass. |
 
 ## Iterations and stop condition
 
@@ -25,7 +27,8 @@ Scope: existing product, synthetic local accounts/services. Earlier draft/mobile
 2. Implemented durable delivery and actual PostgreSQL/Worker fault injection; retry, reload and lost responses pass with one provider acceptance.
 3. Added five UI defect reproductions: all failed before fixes, then all ten engine runs passed.
 4. Expanded auth, filed-record, pagination, timer, install-asset, dependency and speech checks. Fixed the lint/Miniflare compatibility failures introduced by dependency patching.
-5. Ran two full browser passes (96 checks), repeated delivery checks (16), repeated mobile checks (12), and a final browser pass after endpoint hardening. No known failing local regression remains. Exact final results and external blockers are in ACCEPTANCE-RESULTS.md.
+5. Read open GitHub issues (none) and existing PR review threads; reproduced/fixed both reported findings (RR-15/16).
+6. Ran two full browser passes (96 checks), repeated delivery checks (16), repeated mobile checks (12), and a final browser pass after endpoint hardening. No known failing local regression remains. Exact final results and external blockers are in ACCEPTANCE-RESULTS.md.
 
 ## External acceptance still open
 

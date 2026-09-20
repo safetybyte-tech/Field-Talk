@@ -5,8 +5,8 @@
 ## Final validation
 
 - Lint; frontend and Worker TypeScript checks: passed.
-- Unit, generation, review-integrity, storage, configuration and actual PostgreSQL delivery tests: 42 passed.
-- Complete browser suite: 48 passed in the final Chromium/WebKit run; two preceding full passes also passed (96 checks).
+- Unit, generation, review-integrity, storage, configuration and actual PostgreSQL delivery tests: 44 passed.
+- Complete browser suite: 54 passed in the final Chromium/WebKit run; two preceding full passes also passed (96 checks).
 - Delivery acceptance: 16 passed (four scenarios × two engines × two runs), using the actual App, Worker and PostgreSQL migration, with fake auth and provider boundaries.
 - Mobile interaction: 12 passed (three cases × Pixel 5/Chromium and iPhone 13/WebKit × two runs). Includes touch, reduced keyboard space, landscape/portrait transitions, long recipient wrapping, sign-off, unsupported/denied speech fallback and partial-transcript stop.
 - PDF creation inside Cloudflare workerd: passed.

@@ -105,7 +105,7 @@ export const TalkEditor = React.forwardRef<TalkEditorHandle, TalkEditorProps>(fu
     }
   };
   React.useImperativeHandle(ref, () => ({
-    saveBeforeLeave: async () => sent || (!drafting && !sending && (!!editedTalk.submittedAt || !!editedTalk.deliveryPending || await persist(editedTalk))),
+    saveBeforeLeave: async () => sent || (!drafting && !sending && (!!editedTalk.submittedAt || !!editedTalk.deliveryPending || !dirty || await persist(editedTalk))),
   }));
   const changeStep = async (next: 1 | 2 | 3) => {
     stopDictation();
