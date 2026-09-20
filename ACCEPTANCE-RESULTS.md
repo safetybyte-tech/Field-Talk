@@ -1,66 +1,57 @@
-# Deeper release acceptance — September 20, 2026
+# Release acceptance — September 20, 2026
 
-**Disposition: not ready to release.** The deeper pass found a reproducible delivery-retry defect and an unusable staging build. Real account/inbox and physical-device acceptance are still pending access. No real email, signup, reset, account mutation, or production deployment was performed in this follow-up.
+**Local regression scope is passing; live release acceptance remains blocked.** The original duplicate-email reproduction is now fixed and protected by real Worker/PostgreSQL failure tests. See BUG-LOG.md for each issue, its reproduction and regression evidence. No real email, signup/reset mutation, live database migration, Worker deployment or production frontend deployment was performed.
 
-## Delivery recovery: FAIL
+## Final validation
 
-Run `npm run test:acceptance` (Chromium and WebKit). This runs the real App/API with simulated mail acceptance and database failures. It is a separate release gate, intentionally fails on the current implementation, and is not skipped or marked as an expected failure.
+- Lint; frontend and Worker TypeScript checks: passed.
+- Unit, generation, review-integrity, storage, configuration and actual PostgreSQL delivery tests: 42 passed.
+- Complete browser suite: 48 passed in the final Chromium/WebKit run; two preceding full passes also passed (96 checks).
+- Delivery acceptance: 16 passed (four scenarios × two engines × two runs), using the actual App, Worker and PostgreSQL migration, with fake auth and provider boundaries.
+- Mobile interaction: 12 passed (three cases × Pixel 5/Chromium and iPhone 13/WebKit × two runs). Includes touch, reduced keyboard space, landscape/portrait transitions, long recipient wrapping, sign-off, unsupported/denied speech fallback and partial-transcript stop.
+- PDF creation inside Cloudflare workerd: passed.
+- Frontend production build with synthetic service endpoints and Worker dry-run deployment bundle: passed. Local bundles were not deployed.
+- Missing-environment build fails clearly, as required. PWA icons/favicon resolve to real assets.
+- Root and Worker dependency audits: zero vulnerabilities at validation time.
+- Git whitespace/diff check: passed.
 
-1. Open the saved synthetic draft, progress through crew, acknowledge review items, and sign.
-2. `/send-talk` returns success, representing an accepted email.
-3. Fail the subsequent `storage.saveTalk` call.
-4. Observe an error and zero filed records.
-5. Restore storage and retry.
-6. **Observed in both engines:** two accepted mail requests with different `submittedAt` values, followed by one filed record. **Required:** one mail request, followed by successful recovery/filing of that delivery.
+The browser suites use controlled service boundaries. The delivery suite executes the migration in PGlite PostgreSQL against a fixture of the existing talks schema; this does not prove compatibility with an unseen deployed schema or its other policies/triggers. Browser emulation and fake speech APIs do not replace physical-device testing.
 
-Because the worker's idempotency key incorporates `submittedAt`, this is not protected by its existing key. This test confirms the previously inspection-only P1 issue. The separate **Delivery release gate** CI workflow exposes the failure. Traces and compact delivery evidence are retained in `acceptance-results/` and uploaded by CI.
+## Delivery recovery contract
 
-A safe fix needs durable submission identity and accepted/uncertain/filed state shared across retries and reloads, including handling the provider's idempotency-retention window. An in-memory flag or blindly moving the database write before email would not solve both missing-record and duplicate-email outcomes. No unverified backend/schema redesign is included in this testing follow-up.
+`/v2/send-talk` verifies new sign-off and ownership, reserves an immutable signed snapshot plus the exact email/PDF payload in PostgreSQL, sends using the receipt's stable provider key, acknowledges the provider receipt, then files the talk. The browser displays success only after server-confirmed filing. No browser database write follows email acceptance.
 
-## Staging deployment: BLOCKED; build guard fixed
+Retries/reloads use the same stored payload. After provider acknowledgement, retry only finishes filing. Uncertain requests cannot be resent automatically once 23 hours have elapsed; support must reconcile the receipt. This leaves a margin within [Resend's 24-hour idempotency window](https://resend.com/docs/dashboard/emails/idempotency-keys). Concurrent requests, failed reservation/acknowledgement/filing, lost provider/browser responses, expired uncertain state, ownership, service-only permissions, snapshot locking and profile-name changes are covered.
 
-Cloudflare lists `https://f4c61a2a.toolbox-talk.pages.dev` as the preview for PR commit `02e33ab`. Its main bundle (`index-DlD3pI45.js`) defines both Supabase configuration values as `void 0` and immediately throws `Missing Supabase environment variables`. No configured Worker URL appears in that bundle either. This preview cannot execute real signup, login, or generation.
+Pending records stay read-only and recoverable; filed records cannot be edited or resent. The legacy `/send-talk` endpoint rejects old clients with a reload instruction. The new frontend never falls back to it. This prevents an old/new deployment mix from reintroducing the unsafe sequence.
 
-The build now checks all three required frontend variables and rejects missing/malformed configuration before producing an unusable deployment. Tests cover each missing variable and invalid service URLs without exposing credentials. A build with synthetic endpoints succeeds; an unconfigured build fails with the expected clear error.
+## Required rollout — not executed
 
-To unblock: configure the Cloudflare Preview environment with a designated test Supabase URL/public anon key and Worker URL, or explicitly authorize a synthetic account against the live services. Production settings and secrets have not been copied or changed. A test inbox/account is also needed for confirmation/reset links and receipt/PDF verification. The auto-created preview from the original PR push is not a production deployment.
+1. Configure a designated test Supabase instance and Worker plus a usable test inbox. Apply `supabase/migrations/20260920120000_talk_deliveries.sql` to staging after checking its existing talks schema and policies. This migration assumes the pre-existing talks table used by storage.ts; that base schema is not in this repository.
+2. Deploy the Worker with the new migration present, preserving the intended live/test secrets, allowed origins and feature flags. Do not blindly replace the deployed Harness V2 settings with wrangler.toml defaults.
+3. Deploy the frontend with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and `VITE_WORKER_URL` set for that environment. Existing clients must reload before sending; new clients pointed at an older Worker get an error rather than a legacy send.
+4. Exercise real signup confirmation, login/logout, reset and expired links. Generate, edit, sign and send a synthetic talk to the test inbox; inspect its PDF and reopen the filed database record.
+5. Complete physical iPhone/Android checks below before promoting to production.
 
-## Mobile: emulation and device limitations
+The receipt table contains signed record data and email/PDF payloads. It has RLS with no public/authenticated access; service-only RPCs perform mutations. Keep receipts when records are removed so their IDs cannot be resent. Include receipt data in the application's access/retention procedures.
 
-The original 32-check suite already passed Chromium/WebKit at 375, 390, 768, and 1280 pixels. This follow-up adds touch-enabled Pixel 5/Chromium and iPhone 13/WebKit profiles, a 420-pixel reduced viewport to approximate keyboard space, recipient entry, sign-off, and unavailable-dictation fallback. These are automated approximations, not real OS keyboards or speech recognition.
+For an old uncertain delivery, verify its exact idempotency key/provider receipt before any action. If provider acceptance is verified, a service-role operator can call `acknowledge_talk_delivery` with the verified provider ID, then `complete_talk_delivery`; both enforce ownership. Do not reset timestamps, delete pending receipts, invent provider IDs or blindly create another copy. If no acceptance can be established, investigation remains necessary. The automated suite covers that deliberate refusal to resend.
 
-Initial Android emulation: both new cases passed. Initial iPhone emulation: WebKit timed out during browser/page setup, before Field Talk loaded. Subsequent environment interruption removed the cached browser executables; the runtimes were restored in a temporary test directory for a final rerun. **Final rerun: all 4 new mobile-emulation checks passed (2 in each device profile).** This resolves the browser-runtime setup failure, but does not replace physical-phone acceptance.
+## Staging and access blockers
 
-Physical-device discovery found a paired iPhone 17 Pro Max, but its state was **unavailable**. No Android device tooling was installed. An iPhone 16e/iOS 26.2 simulator booted, but the computer-control service could not capture its screen (`failedToCreateImageDestination`), so no simulator keyboard/dictation pass is claimed. The test simulator was shut down afterward.
+The PR preview inspected earlier (`https://f4c61a2a.toolbox-talk.pages.dev`, commit 02e33ab) bundled missing Supabase values and threw at startup. The build now rejects that configuration, but designated Preview service values have not been supplied or copied from production. A staging URL/inbox or explicit authorization for a new synthetic production account is still pending.
 
-## Real integrations: NOT RUN
+Automatic approval review rejected opening the pre-existing signed-in production tab because staging authorization did not cover that private live account. The session was not inspected and no workaround was used.
 
-Still required with a working test environment and mailbox:
+A paired iPhone 17 Pro Max was unavailable. Android device tooling was absent. An iPhone simulator booted but screen capture failed, so no simulator acceptance is claimed; that simulator was shut down. No real microphone or OS-keyboard acceptance is claimed.
 
-- Signup confirmation, returning login, logout, actual password-reset links, and expired-link rejection.
-- Real generation followed by manual content edits, crew/recipients, sign-off, send, received PDF inspection, and database reopening.
-- Physical iPhone Safari and Android Chrome with real keyboard, portrait/landscape, permission-denied and real dictation, background/resume, and lost/recovered connectivity.
+## Physical acceptance checklist
 
-Automatic approval review rejected opening the pre-existing signed-in production tab because staging authorization did not cover exposure of that private live account. The existing session was not inspected and no workaround was used. A request for a staging URL/inbox or explicit synthetic-production approval remains pending.
+On an available iPhone/Safari and Android/Chrome, record phone/OS/browser and use clearly labeled synthetic data:
 
-## Physical-device checklist
-
-Use only synthetic records clearly labeled QA. On each phone:
-
-1. Sign in; generate or select a template; edit a long topic and task notes with the keyboard open.
-2. Add/check crew, enter site/weather, add a long email address, and rotate portrait/landscape. All controls must remain reachable without sideways page scrolling.
-3. Deny microphone access and verify typed entry still works; separately allow dictation and verify the actual transcript and stop behavior.
-4. Review flags, sign, download/read the PDF, send to the test inbox, and reopen the filed record.
-5. Briefly background and return. Disable connectivity, attempt a save, restore connectivity, and retry while preserving edits. Closing the app offline is not supported as durable draft storage.
-6. Record phone/OS/browser, observed results, screenshots, and any failed step. Keep the duplicate-delivery failure injection confined to a controlled test service.
-
-## Follow-up validation
-
-- Lint and TypeScript: passed.
-- Unit/worker/configuration tests: 27 passed.
-- Configured production build: passed with synthetic service endpoints; no bundle was published from this local command.
-- Unconfigured build: failed as required with all missing variable names.
-- Ordinary browser regression suite: 32 passed again after the build-guard change.
-- Additional device emulation: 4 passed after browser-runtime restoration.
-- Delivery-failure acceptance: 2 failed on the duplicate-send assertion, one per engine. This is a release blocker, not a passing check.
-- Real auth/inbox, expired-token, physical microphone/keyboard: pending the access described above.
+1. Sign in; generate or select a template; type long notes with the real keyboard open.
+2. Add/check crew, site/weather and a long recipient address; rotate and verify controls remain reachable without sideways scrolling.
+3. Deny microphone permission and type instead; separately allow real dictation and verify transcript/stop behavior.
+4. Review, sign, read/download the PDF, send to the test inbox and reopen the filed record.
+5. Background/resume, lose connectivity during save, restore it and retry without losing edits. Offline closing is not supported as durable draft storage; the UI tells users to keep the page open.
+6. Run real confirmation/reset/expired-link checks with the test mailbox. Preserve evidence without exposing account secrets.

@@ -114,7 +114,9 @@ test('all submitted records remain reachable beyond the tenth record', async ({ 
   await page.getByRole('button', { name: 'Open records' }).click();
   await expect(page.getByRole('heading', { name: 'Filed record 12', exact: true })).toBeVisible();
   await page.getByRole('heading', { name: 'Filed record 12', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Topic' })).toHaveValue('Filed record 12');
+  await expect(page.getByRole('heading', { name: 'Filed record 12' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Send to|Next —/ })).not.toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Topic' })).not.toBeVisible();
 });
 
 test('generation, review, PDF, send failure/retry and filing preserve the approved record', async ({ page }) => {
@@ -122,9 +124,12 @@ test('generation, review, PDF, send failure/retry and filing preserve the approv
   const { record } = await import('../fixtures/record.mjs');
   const fixture = record();
   await page.route('https://worker.invalid/v2/generate-talk', route => route.fulfill({ json: { content: fixture.content, harness: fixture.harness } }));
-  await page.route('https://worker.invalid/send-talk', route => {
+  await page.route('https://worker.invalid/v2/send-talk', async route => {
     sendCount++;
-    return route.fulfill(sendCount === 1 ? { status: 503, json: { error: 'Mail service unavailable; retry.' } } : { json: { ok: true } });
+    if (sendCount === 1) return route.fulfill({ status: 503, json: { error: 'Mail service unavailable; retry.' } });
+    const talk = { ...route.request().postDataJSON().talk, submittedAt: Date.now(), deliveryPending: false };
+    await page.evaluate(saved => { window.fixture.talks = [saved, ...window.fixture.talks.filter(t => t.id !== saved.id)]; }, talk);
+    return route.fulfill({ json: { ok: true, talk } });
   });
   await page.goto('/tests/fixtures/app.html');
   await page.getByRole('button', { name: /Start today/ }).click();

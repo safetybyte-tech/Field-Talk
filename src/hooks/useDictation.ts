@@ -53,7 +53,7 @@ interface UseDictationOptions {
   onError?: (error: string) => void;
 }
 
-/** Wraps the browser's built-in speech recognition for dictating short work descriptions. No audio or transcript leaves the device. */
+/** Wraps the browser's built-in speech recognition for dictating short work descriptions. The browser's speech service may process audio remotely, depending on browser settings. */
 export function useDictation({ onResult, onError }: UseDictationOptions) {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -64,7 +64,7 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
   onErrorRef.current = onError;
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
+    try { recognitionRef.current?.stop(); } catch { /* Already stopped by the browser. */ }
   }, []);
 
   const start = useCallback(() => {
@@ -74,17 +74,18 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
       return;
     }
 
-    // Starting again while a session is active would leak the old listener.
-    recognitionRef.current?.stop();
+    // onstart is asynchronous: a second tap must not create a competing session.
+    if (recognitionRef.current) return;
 
     const recognition = new Ctor();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => { if (recognitionRef.current === recognition) setIsListening(true); };
 
     recognition.onresult = (event) => {
+      if (recognitionRef.current !== recognition) return;
       let finalText = '';
       let interimText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -100,10 +101,14 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
     };
 
     recognition.onerror = (event) => {
+      if (recognitionRef.current !== recognition) return;
+      interimRef.current = '';
+      setIsListening(false);
       onErrorRef.current?.(event.error);
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
       // Chrome can discard the last partial phrase when Stop is pressed.
       // Preserve it so every recording reaches the editable transcript.
       if (interimRef.current) {
@@ -116,11 +121,23 @@ export function useDictation({ onResult, onError }: UseDictationOptions) {
 
     recognitionRef.current = recognition;
     interimRef.current = '';
-    recognition.start();
+    try { recognition.start(); } catch (error) {
+      recognitionRef.current = null;
+      setIsListening(false);
+      onErrorRef.current?.(error instanceof DOMException && error.name === 'NotAllowedError' ? 'not-allowed' : 'start-failed');
+    }
   }, []);
 
   // Stop on unmount so a left-open mic doesn't keep listening after the editor closes.
-  useEffect(() => stop, [stop]);
+  useEffect(() => () => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    interimRef.current = '';
+    if (recognition) {
+      recognition.onstart = recognition.onresult = recognition.onerror = recognition.onend = null;
+      try { recognition.stop(); } catch { /* Browser already stopped. */ }
+    }
+  }, []);
 
   return { isListening, start, stop };
 }

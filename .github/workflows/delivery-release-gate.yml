@@ -16,8 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # This asserts the required behavior. It currently fails on duplicate send;
-      # it is deliberately neither skipped nor marked as an expected failure.
+      # Real Worker + PostgreSQL failure recovery; only auth and Resend are fakes.
       - run: npm run test:acceptance -- --project=chromium --workers=1
       - uses: actions/upload-artifact@v4
         if: always()

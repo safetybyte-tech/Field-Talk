@@ -54,6 +54,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     setMode((current) => (current === 'reset' ? 'login' : current));
   }, [isRecoveryMode]);
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    if (params.has('error') || params.has('error_code')) {
+      setError('This sign-in or reset link has expired or is invalid. Request a new link and try again.');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -81,7 +88,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           formData.name,
           formData.password
         );
-        onLogin(user);
+        if (user) onLogin(user);
+        else {
+          setSuccess('Check your inbox to confirm your email, then sign in.');
+          setFormData(current => ({ ...current, password: '', confirmPassword: '' }));
+          setMode('login');
+        }
       } else if (mode === 'forgot') {
         if (!auth.isValidEmail(formData.email.trim())) {
           throw new Error('Please enter a valid email address');

@@ -1,3 +1,5 @@
+> Current status: the deeper defects and delivery blocker below have been addressed in the repeat/fix loop. See [BUG-LOG.md](BUG-LOG.md) and [ACCEPTANCE-RESULTS.md](ACCEPTANCE-RESULTS.md) for final results and remaining live acceptance requirements. This report retains the original pass history.
+
 # Release-readiness pass — September 19, 2026
 
 **September 20 follow-up:** [ACCEPTANCE-RESULTS.md](ACCEPTANCE-RESULTS.md) supersedes the initial gate status. Delivery recovery now has a reproducible failing test; the branch preview also lacked build configuration. Do not treat the initial green regression run below as release approval.

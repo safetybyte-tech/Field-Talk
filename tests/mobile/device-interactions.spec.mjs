@@ -14,6 +14,10 @@ test('touch controls and sign-off remain reachable with a reduced viewport', asy
   await page.getByPlaceholder('Add someone by name').fill('Touch Test Crew Member');
   await page.getByRole('button', { name: 'Add', exact: true }).tap();
   await page.getByLabel('Location', { exact: true }).fill('Synthetic mobile site');
+  await page.setViewportSize({ width: original.height, height: original.width });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Next — send it' })).toBeInViewport();
+  await page.setViewportSize(original);
   await page.getByRole('button', { name: 'Next — send it' }).tap();
   await expect(page.getByRole('heading', { name: "Sign it, then it's out of your hands." })).toBeVisible();
   await page.getByRole('button', { name: 'Someone else' }).tap();
@@ -41,4 +45,28 @@ test('unavailable dictation leaves typed input and draft saving usable', async (
   await page.getByRole('textbox', { name: 'Your words' }).fill('Typed fallback notes');
   await page.getByRole('button', { name: 'Save draft', exact: true }).tap();
   await expect.poll(() => page.evaluate(() => window.fixture.talks[0].notes)).toBe('Typed fallback notes');
+});
+
+test('speech startup failure and partial transcript stop preserve typed fallback', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.qaSpeechFail = true;
+    window.SpeechRecognition = class {
+      constructor() { window.qaSpeech = this; }
+      start() { if (window.qaSpeechFail) throw new DOMException('Permission denied', 'NotAllowedError'); this.onstart?.(); }
+      stop() { this.onend?.(); }
+    };
+  });
+  await page.route('https://**/*', route => route.abort());
+  await page.goto('/tests/fixtures/app.html');
+  await page.getByRole('button', { name: /Start today/ }).tap();
+  await page.getByRole('button', { name: 'Tap and talk it through' }).tap();
+  await expect(page.getByRole('alert')).toContainText('Microphone access is blocked');
+  await page.getByRole('textbox', { name: 'Your words' }).fill('Typed notes.');
+  await page.evaluate(() => { window.qaSpeechFail = false; });
+  await page.getByRole('button', { name: 'Say a bit more' }).tap();
+  await page.evaluate(() => window.qaSpeech.onresult({ resultIndex: 0, results: [{ 0: { transcript: 'Check the trench' }, isFinal: false, length: 1 }] }));
+  await page.getByRole('button', { name: 'Listening… tap to stop' }).tap();
+  await expect(page.getByRole('textbox', { name: 'Your words' })).toHaveValue('Typed notes. Check the trench');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).tap();
+  await expect.poll(() => page.evaluate(() => window.fixture.talks[0].notes)).toBe('Typed notes. Check the trench');
 });

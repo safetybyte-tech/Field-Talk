@@ -23,6 +23,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const active = React.useRef(true);
+  const returnTimer = React.useRef<ReturnType<typeof setTimeout>>();
+  React.useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; clearTimeout(returnTimer.current); };
+  }, []);
 
   // Common construction trades
   const trades = [
@@ -72,10 +78,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         customTrade: editedUser.customTrade,
       });
 
+      if (!active.current) return;
       onUpdateUser(updatedUser);
       setSuccess('Profile updated successfully!');
 
-      setTimeout(() => {
+      returnTimer.current = setTimeout(() => {
         setSuccess('');
         onBack();
       }, 1500);
