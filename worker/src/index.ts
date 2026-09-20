@@ -1,3 +1,4 @@
+import { deliverTalk, findDelivery, resumeDelivery } from './delivery';
 import { parseHarnessReview } from '../../src/utils/harness';
 import type { ToolboxTalk, StructuredTalkContent, TalkCitation } from '../../src/types';
 import { createTalkPdfAttachment } from '../../src/utils/talkDocument';
@@ -627,8 +628,21 @@ async function handleSendTalk(request: Request, env: Env, origin: string, user: 
     return jsonResponse({ error: 'Invalid request body' }, 400, origin);
   }
 
+  if (typeof talk.id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(talk.id)) return jsonResponse({ error: 'Save this draft before sending.' }, 400, origin);
+  try {
+    const receipt = await findDelivery(env, user.id, talk.id);
+    if (receipt) {
+      if (talk.approvedRecord && talk.approvedRecord !== receipt.talk.approvedRecord) {
+        return jsonResponse({ error: 'Delivery already started for another version. Reopen the saved record to check its delivery.' }, 409, origin);
+      }
+      return jsonResponse({ ok: true, talk: await resumeDelivery(env, user.id, receipt) }, 200, origin);
+    }
+  } catch (error) {
+    return jsonResponse({ error: error instanceof Error ? error.message : 'Delivery could not be confirmed. Retry to check the same delivery.' }, 503, origin);
+  }
+
   if (!validTalkPayload(talk)) return jsonResponse({ error: 'Invalid talk record.' }, 400, origin);
-  if (!hasCurrentApproval(talk) || talk.approvedByUserId !== user.id || talk.approvedBy !== user.user_metadata?.name?.trim() || talk.approvedAt! > Date.now() + 60_000) {
+  if (!hasCurrentApproval(talk) || talk.approvedByUserId !== user.id || talk.approvedAt! > Date.now() + 60_000) {
     return jsonResponse({ error: 'This version needs your sign-off. Review it and sign again before sending.' }, 403, origin);
   }
   const incomplete = signOffError(talk);
@@ -648,6 +662,8 @@ async function handleSendTalk(request: Request, env: Env, origin: string, user: 
     return jsonResponse({ error: `Invalid supervisor email: ${talk.supervisorEmail}` }, 400, origin);
   }
 
+  talk = { ...talk, submittedAt: Date.now(), deliveryPending: true };
+
   // Never trust a caller-supplied PDF. Both representations use this checked record.
   const pdf = createTalkPdfAttachment(talk);
 
@@ -659,14 +675,7 @@ async function handleSendTalk(request: Request, env: Env, origin: string, user: 
   const from = env.RESEND_FROM_NAME
     ? `${env.RESEND_FROM_NAME} <${env.RESEND_FROM_EMAIL}>`
     : env.RESEND_FROM_EMAIL;
-  const resendRes = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Idempotency-Key': `fieldtalk-${talk.id}-${talk.submittedAt || Date.now()}`,
-    },
-    body: JSON.stringify({
+  const payload = JSON.stringify({
       from,
       to: selectedRecipients.map((recipient) => recipient.email),
       subject: email.subject,
@@ -677,20 +686,13 @@ async function handleSendTalk(request: Request, env: Env, origin: string, user: 
       headers: {
         'X-FieldTalk-Talk-ID': talk.id,
       },
-    }),
   });
-
-  if (!resendRes.ok) {
-    const errorBody = await resendRes.text();
-    return jsonResponse(
-      { error: `Resend error ${resendRes.status}: ${errorBody || resendRes.statusText}` },
-      502,
-      origin
-    );
+  try {
+    const filed = await deliverTalk(env, user.id, talk, payload, user.user_metadata?.name?.trim() || '');
+    return jsonResponse({ ok: true, talk: filed }, 200, origin);
+  } catch (error) {
+    return jsonResponse({ error: error instanceof Error ? error.message : 'Delivery could not be confirmed. Retry to check the same delivery.' }, 503, origin);
   }
-
-  const resendData = await resendRes.json().catch(() => ({})) as { id?: string };
-  return jsonResponse({ ok: true, id: resendData.id }, 200, origin);
 }
 
 async function recordHarnessV2Run(
@@ -1047,6 +1049,9 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname === '/send-talk') {
+      return jsonResponse({ error: 'Update Field Talk by reloading the app before sending this record.' }, 426, origin);
+    }
+    if (url.pathname === '/v2/send-talk') {
       return handleSendTalk(request, env, origin, user);
     }
 

@@ -19,6 +19,7 @@ function rowToTalk(row: Record<string, unknown>): ToolboxTalk {
     attendees: (row.attendees as Attendee[]) || [],
     recipients: (row.recipients as ToolboxTalk['recipients']) || [],
     createdAt: new Date(row.created_at as string).getTime(),
+    deliveryPending: !row.submitted_at && decoded.metadata.deliveryPending,
     submittedAt: row.submitted_at ? new Date(row.submitted_at as string).getTime() : undefined,
   };
 }
@@ -70,13 +71,17 @@ export const storage = {
 
   /** Fetch all talks for the current user, newest first. */
   getTalks: async (userId: string): Promise<ToolboxTalk[]> => {
-    const { data, error } = await supabase
-      .from('talks')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(rowToTalk);
+    const talks: ToolboxTalk[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabase
+        .from('talks').select('*').eq('user_id', userId)
+        .order('created_at', { ascending: false }).order('id', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      talks.push(...(data || []).map(rowToTalk));
+      if (!data || data.length < pageSize) return talks;
+    }
   },
 
   /** Fetch a single talk by ID. */
@@ -104,9 +109,9 @@ export const storage = {
 
   /** Save attendees to the recent_attendees table (upsert by user+name). */
   saveRecentAttendees: async (attendees: Attendee[], userId: string): Promise<void> => {
-    const nonTempNames = attendees
+    const nonTempNames = [...new Set(attendees
       .filter(a => !a.isTemporary)
-      .map(a => a.name);
+      .map(a => a.name.trim()).filter(Boolean))];
 
     if (nonTempNames.length === 0) return;
 

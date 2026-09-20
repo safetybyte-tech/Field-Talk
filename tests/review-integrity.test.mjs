@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { modules, root } from './helpers/load-typescript.mjs';
 import { record, content, user } from './fixtures/record.mjs';
+import { deliveryHarness } from './helpers/delivery-harness.mjs';
 const load = modules();
 const review = load('src/utils/recordReview.ts');
 const safety = load('src/utils/safetyReview.ts');
@@ -72,12 +73,13 @@ function sendWorker() {
   const deliveries = [];
   const loader = modules(async (url, opts) => {
     if (url.endsWith('/auth/v1/user')) return Response.json(user);
+    if (url.endsWith('/rpc/find_talk_delivery')) return Response.json(null);
     if (url === 'https://api.resend.com/emails') { deliveries.push(JSON.parse(opts.body)); return Response.json({ id: 'mock-only' }); }
     throw new Error(`Unexpected network: ${url}`);
   });
   const worker = loader('worker/src/index.ts', '\nexport { buildTalkEmail };');
   const env = { SUPABASE_URL: 'https://supabase.invalid', SUPABASE_SERVICE_ROLE_KEY: 'mock', RESEND_API_KEY: 'mock', RESEND_FROM_EMAIL: 'mock@example.com', CORS_ORIGIN: 'http://localhost' };
-  return { deliveries, worker, send: (talk, pdf) => worker.default.fetch(new Request('http://localhost/send-talk', { method: 'POST', headers: { Authorization: 'Bearer mock', 'Content-Type': 'application/json' }, body: JSON.stringify({ talk, pdf }) }), env) };
+  return { deliveries, worker, send: (talk, pdf) => worker.default.fetch(new Request('http://localhost/v2/send-talk', { method: 'POST', headers: { Authorization: 'Bearer mock', 'Content-Type': 'application/json' }, body: JSON.stringify({ talk, pdf }) }), env) };
 }
 test('server rejects unsigned, stale, forged-identity and malformed records before delivery', async () => {
   const { send, deliveries } = sendWorker();
@@ -85,10 +87,12 @@ test('server rejects unsigned, stale, forged-identity and malformed records befo
   for (const bad of [record(), { ...signed, title: 'tampered' }, review.signRecord(record(), { ...user, id: 'another-user' }), review.signRecord(record(), { ...user, name: 'Somebody Else' }), { ...signed, approvedBy: 4 }, { ...signed, attendees: null }]) assert.ok((await send(bad)).status >= 400);
   assert.equal(deliveries.length, 0);
 });
-test('server generates its own valid PDF and email from the same approved record', async () => {
-  const { send, deliveries } = sendWorker();
+test('server generates its own valid PDF and email from the same approved record', async t => {
+  const h = await deliveryHarness(); t.after(h.close);
+  const { send } = h;
   const signed = review.signRecord(record(), user);
   assert.equal((await send(signed, { filename: 'unrelated.pdf', content: 'bm90IGEgUERG' })).status, 200);
+  const deliveries = [...h.provider.values()].map(value => JSON.parse(value.body));
   assert.equal(deliveries.length, 1);
   const pdf = Buffer.from(deliveries[0].attachments[0].content, 'base64');
   assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');

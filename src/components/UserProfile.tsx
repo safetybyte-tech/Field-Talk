@@ -23,6 +23,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const active = React.useRef(true);
+  const returnTimer = React.useRef<ReturnType<typeof setTimeout>>();
+  React.useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; clearTimeout(returnTimer.current); };
+  }, []);
 
   // Common construction trades
   const trades = [
@@ -72,10 +78,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         customTrade: editedUser.customTrade,
       });
 
+      if (!active.current) return;
       onUpdateUser(updatedUser);
       setSuccess('Profile updated successfully!');
 
-      setTimeout(() => {
+      returnTimer.current = setTimeout(() => {
         setSuccess('');
         onBack();
       }, 1500);
@@ -127,7 +134,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Back to dashboard"
+          className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft size={24} />
         </button>
@@ -301,7 +309,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         <div className="border-t pt-6">
           <h2 className="text-lg font-semibold mb-4">Account Information</h2>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-gray-600">Account Created:</span>
               <span className="font-medium">
                 {new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -313,9 +321,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 })}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-gray-600">User ID:</span>
-              <span className="font-mono text-xs">{user.id}</span>
+              <span className="min-w-0 break-all text-right font-mono text-xs">{user.id}</span>
             </div>
           </div>
         </div>

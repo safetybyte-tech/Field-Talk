@@ -1,11 +1,12 @@
 import React from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
-import { TalkEditor } from './components/TalkEditor';
+import { TalkEditor, type TalkEditorHandle } from './components/TalkEditor';
 import { Outbox } from './components/Outbox';
 import { LandingPage } from './components/LandingPage';
 import { UserProfile } from './components/UserProfile';
 import { ToolboxTalk, User } from './types';
+import { mergeSavedTalk } from './utils/talkRecords';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
@@ -47,63 +48,90 @@ function App() {
   const [currentTalk, setCurrentTalk] = React.useState<ToolboxTalk | null>(null);
   const [recentNames, setRecentNames] = React.useState<string[]>([]);
   const [submitStatus, setSubmitStatus] = React.useState<string>('');
+  const editorRef = React.useRef<TalkEditorHandle>(null);
+  const [dataError, setDataError] = React.useState('');
+  const [actionError, setActionError] = React.useState('');
+  const [dataLoading, setDataLoading] = React.useState(false);
+  const account = React.useRef<string | null>(null);
+  const sessionVersion = React.useRef(0);
+  const loadVersion = React.useRef(0);
+  const openVersion = React.useRef(0);
+  const applyUser = React.useCallback((next: User | null) => {
+    if (account.current !== (next?.id || null)) {
+      sessionVersion.current++;
+      loadVersion.current++;
+      openVersion.current++;
+      account.current = next?.id || null;
+      setTalks([]); setRecentNames([]); setCurrentTalk(null);
+      setCurrentView('dashboard'); setSubmitStatus(''); setDataError(''); setActionError('');
+    }
+    setUser(next);
+    setIsAuthenticated(!!next);
+  }, []);
 
   const loadData = React.useCallback(async (userId: string) => {
+    const requestVersion = ++loadVersion.current;
+    const session = sessionVersion.current;
+    const current = () => account.current === userId && sessionVersion.current === session && requestVersion === loadVersion.current;
+    setDataLoading(true);
     try {
       const [fetchedTalks, fetchedNames] = await Promise.all([
         storage.getTalks(userId),
         storage.getRecentAttendees(userId),
       ]);
+      if (!current()) return;
+      setDataError('');
       setTalks(fetchedTalks);
       setRecentNames(fetchedNames);
     } catch (err) {
+      if (!current()) return;
       console.error('Failed to load data:', err);
-    }
+      setDataError('Your records could not be loaded. Please retry.');
+    } finally { if (current()) setDataLoading(false); }
   }, []);
 
   const removeRecentName = async (name: string) => {
     if (!user) return;
-    await storage.removeRecentAttendee(name, user.id);
-    setRecentNames(await storage.getRecentAttendees(user.id));
+    const session = sessionVersion.current;
+    setActionError('');
+    try {
+      await storage.removeRecentAttendee(name, user.id);
+      if (session === sessionVersion.current) setRecentNames(current => current.filter(item => item !== name));
+    } catch {
+      if (session === sessionVersion.current) setActionError('This crew member could not be removed. Please retry.');
+    }
   };
 
   const deleteTalk = async (id: string) => {
     if (!user) return;
-    await storage.deleteTalk(id);
-    setTalks(await storage.getTalks(user.id));
+    const session = sessionVersion.current;
+    setActionError('');
+    try {
+      await storage.deleteTalk(id);
+      if (session === sessionVersion.current) setTalks(current => current.filter(talk => talk.id !== id));
+    } catch {
+      if (session === sessionVersion.current) setActionError('This record could not be deleted. If delivery is pending, reopen it to check delivery first. Otherwise, please retry.');
+    }
   };
 
-  // Auth state listener
   React.useEffect(() => {
-    // Check initial session
-    auth.getCurrentUser().then((currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-      }
+    let active = true;
+    let authEventReceived = false;
+    const unsubscribe = auth.onAuthStateChange((changedUser, event) => {
+      if (!active) return;
+      authEventReceived = true;
+      if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
+      if (event === 'SIGNED_OUT') setIsPasswordRecovery(false);
+      applyUser(changedUser);
       setAuthLoading(false);
     });
-
-    // Subscribe to future auth changes
-    const unsubscribe = auth.onAuthStateChange((changedUser, event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsPasswordRecovery(true);
-      }
-      if (event === 'SIGNED_OUT') {
-        setIsPasswordRecovery(false);
-      }
-
-      if (changedUser) {
-        setUser(changedUser);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-
-    return unsubscribe;
-  }, []);
+    auth.getCurrentUser().then(currentUser => {
+      if (active && !authEventReceived) applyUser(currentUser);
+    }).catch(() => {
+      if (active && !authEventReceived) applyUser(null);
+    }).finally(() => { if (active) setAuthLoading(false); });
+    return () => { active = false; unsubscribe(); };
+  }, [applyUser]);
 
   // Load data when authenticated
   React.useEffect(() => {
@@ -113,8 +141,7 @@ function App() {
   }, [isAuthenticated, user, loadData]);
 
   const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-    setIsAuthenticated(true);
+    applyUser(loggedInUser);
     setIsPasswordRecovery(false);
   };
 
@@ -131,13 +158,13 @@ function App() {
   };
 
   const handleLogout = async () => {
-    await auth.logout();
-    setUser(null);
-    setIsAuthenticated(false);
-    setCurrentView('dashboard');
-    setCurrentTalk(null);
-    setTalks([]);
-    setRecentNames([]);
+    const session = sessionVersion.current;
+    try {
+      await auth.logout();
+      if (session === sessionVersion.current) applyUser(null);
+    } catch {
+      if (session === sessionVersion.current) setActionError('Sign out could not finish. Please retry.');
+    }
   };
 
   const createNewTalk = () => {
@@ -170,83 +197,98 @@ function App() {
   };
 
   const editTalk = async (talkId: string) => {
-    const talk = await storage.getTalk(talkId);
-    if (talk) {
+    const session = sessionVersion.current;
+    const request = ++openVersion.current;
+    setActionError('');
+    try {
+      const talk = await storage.getTalk(talkId);
+      if (session !== sessionVersion.current || request !== openVersion.current) return;
+      if (!talk) { setActionError('This record is no longer available. Reload your records.'); return; }
       setCurrentTalk(talk);
       setCurrentView('edit');
+    } catch {
+      if (session === sessionVersion.current && request === openVersion.current) setActionError('This record could not be opened. Please retry.');
     }
   };
 
-  const saveTalk = async (talk: ToolboxTalk) => {
-    if (!user) return;
-    const saved = await storage.saveTalk(talk, user.id);
-    await storage.saveRecentAttendees(talk.attendees, user.id);
-    // Update current talk with persisted ID if it was new
-    if (talk.id !== saved.id) {
-      setCurrentTalk(saved);
+  const rememberAttendees = async (talk: ToolboxTalk, userId: string) => {
+    const session = sessionVersion.current;
+    try {
+      await storage.saveRecentAttendees(talk.attendees, userId);
+      const names = await storage.getRecentAttendees(userId);
+      if (session === sessionVersion.current) setRecentNames(names);
+    } catch (error) {
+      // A convenience-list failure must not turn a confirmed save/send into a retry.
+      console.warn('Could not update recent crew:', error);
     }
-    setTalks(await storage.getTalks(user.id));
-    setRecentNames(await storage.getRecentAttendees(user.id));
-    setSubmitStatus('Talk saved');
-    setTimeout(() => setSubmitStatus(''), 3000);
+  };
+
+  const saveTalk = async (talk: ToolboxTalk): Promise<ToolboxTalk> => {
+    if (!user) throw new Error('Please sign in again before saving.');
+    const session = sessionVersion.current;
+    const saved = await storage.saveTalk(talk, user.id);
+    if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
+    setTalks(current => mergeSavedTalk(current, saved, talk.id));
+    void rememberAttendees(talk, user.id);
+    return saved;
   };
 
   const submitTalk = async (talk: ToolboxTalk) => {
     if (!user) throw new Error('Please sign in again before sending.');
+    const session = sessionVersion.current;
     setSubmitStatus('Submitting...');
 
     logger.logEvent(user.id, talk.id, 'send_tapped', { ts: Date.now() });
     logger.startTimer(`submit_${talk.id}`);
 
     try {
-      const saved = await api.submitTalk(talk, user.id);
-      await storage.saveRecentAttendees(talk.attendees, user.id);
+      const saved = await api.submitTalk(talk);
+      if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
+      void rememberAttendees(talk, user.id);
       const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       logger.logEvent(user.id, saved.id, 'send_success', { latency_ms: latencyMs });
 
       setSubmitStatus('Toolbox talk submitted successfully!');
-      setTalks(await storage.getTalks(user.id));
-      setRecentNames(await storage.getRecentAttendees(user.id));
+      setTalks(current => mergeSavedTalk(current, saved, talk.id));
       setTimeout(() => {
-        setSubmitStatus('');
-        setCurrentView('dashboard');
+        if (session === sessionVersion.current) setSubmitStatus('');
       }, 2000);
+      return saved;
     } catch (error) {
+      if (session !== sessionVersion.current) throw error;
       const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       logger.logEvent(user.id, talk.id, 'send_failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
         latency_ms: latencyMs,
       });
       setSubmitStatus(error instanceof Error ? `Failed to submit: ${error.message}` : 'Failed to submit. Please try again.');
-      setTimeout(() => setSubmitStatus(''), 3000);
+      setTimeout(() => { if (session === sessionVersion.current) setSubmitStatus(''); }, 3000);
       throw error;
     }
   };
 
   const goToDashboard = () => {
+    openVersion.current++;
+    if (user) void loadData(user.id);
     setCurrentView('dashboard');
     setCurrentTalk(null);
   };
 
-  const saveAndGoToDashboard = () => {
-    if (currentTalk) {
-      saveTalk(currentTalk);
-    }
-    goToDashboard();
-  };
-
-  const showOutbox = () => {
-    setCurrentView('outbox');
+  const navigate = async (view: ViewType) => {
+    const session = sessionVersion.current;
+    openVersion.current++;
+    if (currentView === 'edit' && !(await editorRef.current?.saveBeforeLeave())) return;
+    if (session !== sessionVersion.current) return;
+    setActionError('');
+    if (user) void loadData(user.id);
+    setCurrentView(view);
     setCurrentTalk(null);
   };
-
-  const showProfile = () => {
-    setCurrentView('profile');
-    setCurrentTalk(null);
-  };
+  const showOutbox = () => { void navigate('outbox'); };
+  const showProfile = () => { void navigate('profile'); };
 
   const updateUser = (updatedUser: User) => {
-    setUser(updatedUser);
+    if (account.current === updatedUser.id) setUser(updatedUser);
   };
 
   // Loading spinner while checking auth
@@ -288,7 +330,7 @@ function App() {
         onEditProfile={showProfile}
         onShowOutbox={showOutbox}
         talks={talks}
-        onTitleClick={currentView === 'edit' ? saveAndGoToDashboard : undefined}
+        onTitleClick={() => { void navigate('dashboard'); }}
       />
 
       {submitStatus && (
@@ -297,9 +339,15 @@ function App() {
         </div>
       )}
 
-      {currentView === 'dashboard' && (
+      {actionError && <div role="alert" className="mx-auto max-w-[760px] p-5 text-stop-text">{actionError}</div>}
+      {dataLoading && <p role="status" className="mx-auto max-w-[760px] p-5">Loading records…</p>}
+      {dataError && <div role="alert" className="mx-auto max-w-[760px] p-5 text-stop-text">
+        {dataError} <button className="min-h-11 underline" onClick={() => user && void loadData(user.id)}>Retry loading records</button>
+      </div>}
+      {currentView === 'dashboard' && !dataError && !dataLoading && (
         <Dashboard
           talks={talks}
+          onShowRecords={showOutbox}
           onNewTalk={createNewTalk}
           onEditTalk={editTalk}
         />
@@ -325,6 +373,9 @@ function App() {
 
       {currentView === 'edit' && currentTalk && (
         <TalkEditor
+          key={`${user?.id}:${currentTalk.id}`}
+          ref={editorRef}
+          onDone={goToDashboard}
           talk={currentTalk}
           onSave={saveTalk}
           onSubmit={submitTalk}

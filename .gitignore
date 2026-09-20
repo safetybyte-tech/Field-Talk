@@ -27,3 +27,10 @@ dist-ssr
 # Cloudflare Worker
 worker/node_modules
 worker/.wrangler
+
+# Local validation artifacts
+test-results/
+playwright-report/
+*.tsbuildinfo
+acceptance-results/
+mobile-results/

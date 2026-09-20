@@ -14,6 +14,7 @@ export interface ToolboxTalk {
   recipients: Recipient[];
   createdAt: number;
   submittedAt?: number;
+  deliveryPending?: boolean;
   /** Human review gate; optional for records created before this redesign. */
   approved?: boolean;
   approvedBy?: string;

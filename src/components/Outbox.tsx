@@ -35,7 +35,8 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Back to dashboard"
+          className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft size={24} />
         </button>
@@ -71,9 +72,9 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
                   onClick={() => onEditTalk(talk.id)}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1 break-words">
                       <h3 className="font-medium text-lg">{talk.title || 'Untitled Talk'}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
                         <div className="flex items-center gap-1">
                           <Calendar size={16} />
                           {talk.date}
@@ -88,7 +89,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
                       </p>
                     </div>
 
-                    <div className="ml-4">
+                    <div className="ml-2 shrink-0">
                       <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
                         Draft
                       </span>
@@ -97,7 +98,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
                           e.stopPropagation();
                           deleteTalk(talk.id);
                         }}
-                        className="ml-2 p-1 text-gray-500 hover:text-red-600 transition-colors"
+                        className="ml-1 min-h-11 min-w-11 p-2 text-gray-500 hover:text-red-600 transition-colors"
                         title="Delete this toolbox talk"
                       >
                         <Trash2 size={16} />
@@ -122,7 +123,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
           </div>
 
           <div className="space-y-3">
-            {submittedTalks.slice(0, 10).map((talk) => {
+            {submittedTalks.map((talk) => {
               const presentCount = talk.attendees.filter(a => a.present).length;
 
               return (
@@ -132,9 +133,9 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
                   onClick={() => onEditTalk(talk.id)}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1 break-words">
                       <h3 className="font-medium text-lg">{talk.title || 'Untitled Talk'}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
                         <div className="flex items-center gap-1">
                           <Calendar size={16} />
                           {talk.date}
@@ -151,7 +152,7 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
                       )}
                     </div>
 
-                    <div className="ml-4">
+                    <div className="ml-2 shrink-0">
                       <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
                         Submitted
                       </span>

@@ -18,7 +18,8 @@ function sessionToUser(session: Session): User {
 export const auth = {
   /** Get current session user (checks local Supabase session) */
   getCurrentUser: async (): Promise<User | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
     if (!session) return null;
     return sessionToUser(session);
   },
@@ -29,7 +30,7 @@ export const auth = {
     username: string,
     name: string,
     password: string
-  ): Promise<User> => {
+  ): Promise<User | null> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -38,7 +39,7 @@ export const auth = {
       },
     });
     if (error) throw error;
-    if (!data.session) throw new Error('Registration succeeded but no session returned. Check email confirmation settings.');
+    if (!data.session) return null;
     return sessionToUser(data.session);
   },
 

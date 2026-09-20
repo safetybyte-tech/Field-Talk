@@ -15,21 +15,23 @@ import { openTalkPdf, parseStructuredTalkContent } from '../utils/talkDocument';
 import { useDictation, isDictationSupported } from '../hooks/useDictation';
 
 interface TalkEditorProps {
-  talk: ToolboxTalk; onSave: (talk: ToolboxTalk) => void; onSubmit: (talk: ToolboxTalk) => Promise<void>; recentNames: string[];
-  currentUser?: User | null; onRemoveRecentName: (name: string) => void; availableDrafts: ToolboxTalk[];
+  talk: ToolboxTalk; onSave: (talk: ToolboxTalk) => Promise<ToolboxTalk | void>; onSubmit: (talk: ToolboxTalk) => Promise<ToolboxTalk | void>; recentNames: string[];
+  onDone?: () => void; currentUser?: User | null; onRemoveRecentName: (name: string) => void; availableDrafts: ToolboxTalk[];
 }
 
 const makeStructured = (raw: string): StructuredTalkContent => ({ i: raw, hazards: [], practices: [], ppe: [], sif: [], manual: [], q: [] });
+const draftVersion = (talk: ToolboxTalk, step = talk.draftStep || 1) => JSON.stringify([approvalSnapshot(talk), step, talk.attendees, talk.recipients, talk.approvedRecord, talk.approvedAt, talk.submittedAt]);
 const fieldClass = 'mt-2 min-h-[52px] w-full border border-rule bg-sheet px-3 text-[17px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none';
 
-export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, recentNames, currentUser, onRemoveRecentName }) => {
+export interface TalkEditorHandle { saveBeforeLeave: () => Promise<boolean>; }
+export const TalkEditor = React.forwardRef<TalkEditorHandle, TalkEditorProps>(function TalkEditor({ talk, onSave, onSubmit, recentNames, currentUser, onRemoveRecentName, onDone }, ref) {
   const [editedTalk, setEditedTalkState] = React.useState<ToolboxTalk>(talk);
   const setEditedTalk = React.useCallback((update: React.SetStateAction<ToolboxTalk>) => {
-    setEditedTalkState(current => changeRecord(current, typeof update === 'function' ? update(current) : update));
+    setEditedTalkState(current => current.submittedAt || current.deliveryPending ? current : changeRecord(current, typeof update === 'function' ? update(current) : update));
   }, []);
   const notes = editedTalk.notes || '';
   const setNotes = React.useCallback((update: React.SetStateAction<string>) => {
-    setEditedTalkState(current => changeRecord(current, { notes: typeof update === 'function' ? update(current.notes || '') : update }));
+    setEditedTalkState(current => current.deliveryPending || current.submittedAt ? current : changeRecord(current, { notes: typeof update === 'function' ? update(current.notes || '') : update }));
   }, []);
   const [warningsAcknowledged, setWarningsAcknowledged] = React.useState(false);
   const currentSnapshot = approvalSnapshot(editedTalk);
@@ -39,8 +41,21 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
   const [structured, setStructured] = React.useState<StructuredTalkContent | null>(() => parseStructuredTalkContent(talk.content));
   const [drafting, setDrafting] = React.useState(false);
   const [error, setError] = React.useState('');
+  const errorRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => { if (error) errorRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, [error]);
   const [sent, setSent] = React.useState(false);
   const [sending, setSending] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const saveInFlight = React.useRef(false);
+  const [savedVersion, setSavedVersion] = React.useState(() => talk.id.startsWith('talk_') ? '' : draftVersion(talk));
+  const dirty = draftVersion(editedTalk, step) !== savedVersion;
+  React.useEffect(() => {
+    const warnBeforeClose = (event: BeforeUnloadEvent) => {
+      if (dirty && !sent) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warnBeforeClose);
+    return () => window.removeEventListener('beforeunload', warnBeforeClose);
+  }, [dirty, sent]);
   const dictationSupported = isDictationSupported();
   const onDictationResult = React.useCallback((text: string, isFinal: boolean) => {
     if (!isFinal) return;
@@ -49,6 +64,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
   }, [setNotes]);
   const onDictationError = React.useCallback((code: string) => {
     const messages: Record<string, string> = {
+      'start-failed': 'Dictation could not start. Try again or type it in below.',
       'not-supported': "Voice dictation is not available in this browser. Type it in below instead.",
       'not-allowed': 'Microphone access is blocked. Enable it in Settings or type it in below.',
       'service-not-allowed': "Dictation isn't available here — type it in below instead.",
@@ -69,11 +85,35 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
     if (currentUser && (!editedTalk.supervisor || !editedTalk.supervisorEmail)) setEditedTalk((current) => ({ ...current, supervisor: current.supervisor || currentUser.name, supervisorEmail: current.supervisorEmail || currentUser.email }));
   }, [currentUser, editedTalk.supervisor, editedTalk.supervisorEmail, setEditedTalk]);
 
-  const persist = (next: ToolboxTalk, nextStep = step) => {
-    const saved = { ...next, notes, draftStep: nextStep };
-    setEditedTalk(saved); onSave(saved);
+  const persist = async (next: ToolboxTalk, nextStep = step): Promise<boolean> => {
+    if (saveInFlight.current) return false;
+    saveInFlight.current = true;
+    setSaving(true);
+    setError('');
+    const draft = { ...next, draftStep: nextStep };
+    try {
+      const saved = await onSave(draft) || draft;
+      setEditedTalkState(current => changeRecord(current, { id: saved.id, draftStep: nextStep }));
+      setSavedVersion(draftVersion(saved));
+      return true;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The draft could not be saved. Keep this page open and retry.');
+      return false;
+    } finally {
+      saveInFlight.current = false;
+      setSaving(false);
+    }
   };
-  const changeStep = (next: 1 | 2 | 3) => { persist(editedTalk, next); setStep(next); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  React.useImperativeHandle(ref, () => ({
+    saveBeforeLeave: async () => sent || (!drafting && !sending && (!!editedTalk.submittedAt || !!editedTalk.deliveryPending || !dirty || await persist(editedTalk))),
+  }));
+  const changeStep = async (next: 1 | 2 | 3) => {
+    stopDictation();
+    if (await persist(editedTalk, next)) {
+      setStep(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   const updateStructured = (content: StructuredTalkContent) => {
     const changed = (['i', 'hazards', 'practices', 'ppe', 'sif', 'manual', 'q'] as const).filter(key => JSON.stringify(structured?.[key]) !== JSON.stringify(content[key]));
     const next = { ...content, citations: (content.citations || []).map(c => ({ ...c, sections: c.sections.filter(key => !changed.includes(key as typeof changed[number])) })).filter(c => c.sections.length) };
@@ -104,27 +144,30 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
       const harness = useHarnessV2 ? parseHarnessReview(result.harness) : undefined;
       if (useHarnessV2 && !harness) throw new Error('The V2 review checks were missing. Please try again or write the record yourself.');
       const content = parseStructuredTalkContent(result.content) || makeStructured(result.content); const next = { ...clearApproval(editedTalk), title: editedTalk.title || `Safety Talk: ${notes.trim()}`, content: JSON.stringify(content), notes, drafted: true, approved: false, harness };
-      setStructured(content); setEditedTalkState(next); onSave({ ...next, draftStep: 1 }); logger.logEvent(currentUser?.id || '', editedTalk.id, 'talk_generated', { latency_ms: logger.getElapsedTime(`ai_generation_${editedTalk.id}`), generator: useHarnessV2 ? 'harness_v2' : 'v1' });
+      setStructured(content); setEditedTalkState(next); await persist(next, 1); logger.logEvent(currentUser?.id || '', editedTalk.id, 'talk_generated', { latency_ms: logger.getElapsedTime(`ai_generation_${editedTalk.id}`), generator: useHarnessV2 ? 'harness_v2' : 'v1' });
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Writing assistance could not finish.'); } finally { setDrafting(false); }
   };
-  const chooseTemplate = (id: string) => {
+  const chooseTemplate = async (id: string) => {
     const template = TALK_TEMPLATES.find((item) => item.id === id); if (!template) return;
     const content = parseStructuredTalkContent(template.content) || makeStructured(template.content); const next = { ...clearApproval(editedTalk), harness: undefined, title: template.title, content: JSON.stringify(content), notes: notes || template.title, drafted: true, approved: false };
-    setStructured(content); setEditedTalkState(next); onSave({ ...next, draftStep: 1 }); logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { source: 'template_selection', template_id: id });
+    setStructured(content); setEditedTalkState(next); await persist(next, 1); logger.logEvent(currentUser?.id || '', editedTalk.id, 'task_selected', { source: 'template_selection', template_id: id });
   };
   const proceed = async () => {
-    if (sending) return;
+    if (sending || drafting || saveInFlight.current) return;
     setError('');
     if (step === 1) { if (!editedTalk.content.trim()) { setError('Write up your words or choose a starting point before moving on.'); return; } changeStep(2); }
     else if (step === 2) { changeStep(3); }
     else {
-      if (!approved) { setError('Check the sign-off before sending. Nothing sends until you sign.'); return; }
+      if (!approved && !editedTalk.deliveryPending) { setError('Check the sign-off before sending. Nothing sends until you sign.'); return; }
       if (!editedTalk.title.trim() || !editedTalk.location.trim() || !editedTalk.weather.trim() || !editedTalk.attendees.length || !editedTalk.recipients.some((recipient) => recipient.selected)) { setError('Add the topic, location, weather, crew, and at least one recipient before sending.'); return; }
-      const finalTalk: ToolboxTalk = { ...editedTalk, notes, submittedAt: Date.now(), draftStep: 3 };
+      const finalTalk: ToolboxTalk = { ...editedTalk, notes, deliveryPending: true, draftStep: 3 };
       logger.logEvent(currentUser?.id || '', editedTalk.id, 'human_signature', { approved_by: finalTalk.approvedBy });
+      setEditedTalkState(finalTalk);
       setSending(true);
       try {
-        await onSubmit(finalTalk);
+        const saved = await onSubmit(finalTalk) || finalTalk;
+        setEditedTalkState(saved);
+        setSavedVersion(draftVersion(saved));
         setSent(true);
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : 'Sending failed. Please try again.');
@@ -138,6 +181,7 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
   const reviewMessages = getReviewMessages(editedTalk);
   const toggleApproval = () => {
     if (approved) { setEditedTalkState(clearApproval(editedTalk)); return; }
+    stopDictation();
     const problem = signOffError(editedTalk);
     if (problem) { setError(problem); return; }
     if (!currentUser?.name.trim()) { setError('Add your name to your profile before signing.'); return; }
@@ -145,11 +189,26 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
     setError(''); setEditedTalkState(signRecord(editedTalk, currentUser));
   };
 
-  if (sent) return <main className="mx-auto max-w-[760px] px-5 pb-24 pt-10"><p className="snd-label text-ok-text">Done · {new Date().toISOString().slice(0, 10)}</p><h1 className="mt-4 text-[34px] font-bold tracking-[-.025em] text-ink">That's today handled.</h1><p className="mt-4 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">The PDF is with {editedTalk.recipients.filter((recipient) => recipient.selected).length} people and filed under your records. {present} of {editedTalk.attendees.length} signed in.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={() => openTalkPdf(editedTalk)} className="min-h-14 bg-accent px-5 font-bold text-white hover:bg-accent-hover">See the record</button><button onClick={() => window.location.reload()} className="min-h-14 border border-ink px-5 font-semibold text-ink hover:bg-sheet">Back to Field Talk</button></div></main>;
+  if (sent) return <main className="mx-auto max-w-[760px] px-5 pb-24 pt-10"><p className="snd-label text-ok-text">Done · {new Date().toISOString().slice(0, 10)}</p><h1 className="mt-4 text-[34px] font-bold tracking-[-.025em] text-ink">That's today handled.</h1><p className="mt-4 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">The PDF is with {editedTalk.recipients.filter((recipient) => recipient.selected).length} people and filed under your records. {present} of {editedTalk.attendees.length} signed in.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={() => openTalkPdf(editedTalk)} className="min-h-14 bg-accent px-5 font-bold text-white hover:bg-accent-hover">See the record</button><button onClick={onDone || (() => window.location.reload())} className="min-h-14 border border-ink px-5 font-semibold text-ink hover:bg-sheet">Back to Field Talk</button></div></main>;
 
+  if (editedTalk.submittedAt) return <main className="mx-auto max-w-[760px] px-5 py-10">
+    <p className="snd-label text-ok-text">Filed record · {editedTalk.date}</p>
+    <h1 className="mt-4 break-words text-3xl font-bold">{editedTalk.title || 'Toolbox talk record'}</h1>
+    <p className="mt-4">This filed record is kept as sent.</p>
+    <button onClick={() => openTalkPdf(editedTalk)} className="my-6 min-h-14 bg-accent px-5 font-bold text-white">Read it in full</button>
+    {structured && <StructuredTalkDisplay content={structured} />}
+  </main>;
+  if (editedTalk.deliveryPending) return <main className="mx-auto max-w-[760px] px-5 py-10">
+    <h1 className="text-3xl font-bold">Check this delivery</h1>
+    <p className="mt-4">This signed record is held while delivery is confirmed. Retry checks the same delivery; keep its content unchanged.</p>
+    {error && <div role="alert" className="mt-4 text-stop-text">{error}</div>}
+    <button disabled={sending} onClick={proceed} className="mt-6 min-h-14 bg-accent px-5 font-bold text-white disabled:opacity-50">{sending ? 'Checking delivery…' : `Send to ${editedTalk.recipients.filter(recipient => recipient.selected).length}`}</button>
+    <button disabled={sending} onClick={onDone} className="ml-3 mt-6 min-h-14 border border-ink px-4">Back to records</button>
+  </main>;
   return <main className="mx-auto max-w-[760px] px-5 pb-32 pt-7">
+    <fieldset disabled={saving || drafting || sending} className="min-w-0">
     <div className="grid grid-cols-3 border border-rule bg-sheet">{(['The talk', 'Who was there', 'Send it'] as const).map((name, index) => { const number = (index + 1) as 1 | 2 | 3; const completed = number < step; return <button key={name} disabled={number > step} onClick={() => number <= step && changeStep(number)} className={`min-h-[68px] border-t-[3px] px-3 py-3 text-left ${number === step ? 'border-t-accent' : 'border-t-transparent'} ${index ? 'border-l border-rule' : ''} ${completed ? 'bg-ground' : 'bg-sheet'} disabled:cursor-default`}><span className={`snd-label ${completed ? 'text-ok-text' : number === step ? 'text-accent' : 'text-ink-faint'}`}>{String(number).padStart(2, '0')} {completed ? 'done' : number === step ? 'now' : 'next'}</span><span className="mt-2 block text-[15px] font-semibold text-ink">{name}</span></button>; })}</div>
-    {error && <div className="mt-5 border border-stop bg-stop-tint px-4 py-3 text-sm text-stop-text">{error}</div>}
+    {error && <div role="alert" ref={errorRef} className="mt-5 border border-stop bg-stop-tint px-4 py-3 text-sm text-stop-text">{error}</div>}
     {editedTalk.content && <aside aria-label="V2 draft review" className="mt-5 border border-rule bg-sheet p-4 text-sm text-ink-body">
       <p className="font-semibold">V2 draft review · {editedTalk.harness?.retrieval.status === 'grounded' ? `${editedTalk.harness.retrieval.sourceCount} OSHA sources retrieved` : 'OSHA evidence unavailable'}</p>
       <p className="mt-2">These automated checks are not a safety approval. Verify the draft and its citations before signing.</p>
@@ -160,8 +219,9 @@ export const TalkEditor: React.FC<TalkEditorProps> = ({ talk, onSave, onSubmit, 
       {!structured && <><button onClick={writeItUp} disabled={drafting} className="mt-4 min-h-14 w-full border-[1.5px] border-ink bg-sheet font-bold text-ink hover:border-accent disabled:border-rule disabled:text-ink-faint">{drafting ? 'Writing it up…' : 'Write it up'}</button><p className="snd-mono mt-3 text-center text-xs text-ink-muted">or pick a starting point below</p><div className="mt-3 flex flex-wrap gap-2">{TALK_TEMPLATES.slice(0, 6).map((template) => <button key={template.id} onClick={() => chooseTemplate(template.id)} className="min-h-11 border border-rule bg-ground px-3 text-sm font-medium text-ink hover:border-accent">{template.title}</button>)}</div></>}
       {structured && <div className="mt-7 border border-rule"><div className="border-b border-[#F5D5B8] bg-accent-tint px-4 py-3"><span className="snd-label border border-[#F5D5B8] bg-sheet px-2 py-1 text-accent-text">Drafted from your words</span><span className="ml-3 text-sm font-medium text-accent-text">Yours to fix before it counts. Nothing sends until you sign it.</span></div><div className="p-4"><label className="snd-label text-ink-muted">Topic</label><AutoSizeTextarea aria-label="Topic" value={editedTalk.title} onChange={(event) => setEditedTalk((current) => ({ ...current, title: event.target.value }))} className={`${fieldClass} py-3 text-lg font-semibold`} placeholder="Today's safety topic" /><div className="mt-6"><StructuredTalkDisplay content={structured} isEditable onContentChange={updateStructured} /></div></div></div>}
     </section>}
-    {step === 2 && <section className="pt-9"><h1 className="max-w-[24ch] text-[30px] font-bold leading-[1.14] tracking-[-.022em] text-ink">Who stood there and listened?</h1><p className="mt-3 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">Yesterday's crew is already checked. Uncheck anyone who isn't here, add anyone new. This is the part an investigator reads first.</p><div className="mt-7 border border-rule bg-sheet p-4"><div className="grid grid-cols-[auto_1fr] items-center gap-3"><span className="snd-mono text-[32px] font-semibold text-ink">{present}</span><span className="snd-mono text-sm text-ink-faint">of {editedTalk.attendees.length}</span></div></div><div className="mt-4"><QuickAttendance attendees={editedTalk.attendees} onUpdateAttendees={updateAttendees} recentNames={recentNames} onRemoveRecentName={onRemoveRecentName} /></div><div className="mt-7 border border-rule bg-sheet p-4"><p className="snd-label text-ink-muted">Where and when</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold text-ink">Location<input value={editedTalk.location} onChange={(event) => setEditedTalk((current) => ({ ...current, location: event.target.value }))} className={fieldClass} placeholder="Where did this happen?" /></label><label className="text-sm font-semibold text-ink">Project<input value={editedTalk.projectNumber} onChange={(event) => setEditedTalk((current) => ({ ...current, projectNumber: event.target.value }))} className={`${fieldClass} snd-mono text-sm`} placeholder="Project number" /></label><label className="text-sm font-semibold text-ink sm:col-span-2">Weather<input value={editedTalk.weather} onChange={(event) => setEditedTalk((current) => ({ ...current, weather: event.target.value }))} className={`${fieldClass} snd-mono text-sm`} placeholder="Pulled from the site's coordinates · edit if it's wrong" /></label></div></div></section>}
-    {step === 3 && <section className="pt-9"><h1 className="max-w-[24ch] text-[30px] font-bold leading-[1.14] tracking-[-.022em] text-ink">Sign it, then it's out of your hands.</h1><p className="mt-3 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">One read-through, your name on it, and the PDF goes to the people who need it. You keep a copy either way.</p><div className="mt-7 border border-rule bg-sheet p-4"><div className="flex items-center justify-between"><p className="snd-label text-ink-muted">The record</p><button onClick={() => openTalkPdf(editedTalk)} className="snd-label text-accent">Read it in full</button></div><dl className="mt-4 divide-y divide-rule-soft"><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Topic</dt><dd className="text-right font-medium text-ink">{editedTalk.title || 'Not set'}</dd></div><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Crew</dt><dd className="snd-mono text-sm text-ink">{present} of {editedTalk.attendees.length} present</dd></div><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Where</dt><dd className="snd-mono text-right text-sm text-ink">{editedTalk.location || 'Not set'} · {editedTalk.projectNumber || '—'}</dd></div></dl></div><div className="mt-7"><RecipientsSelector recipients={editedTalk.recipients} onUpdateRecipients={(recipients) => setEditedTalk((current) => ({ ...current, recipients }))} /></div><div className="mt-7 border border-rule"><div className="bg-accent-tint px-4 py-3"><span className="snd-label border border-[#F5D5B8] bg-sheet px-2 py-1 text-accent-text">Human sign-off</span><span className="ml-3 text-sm font-medium text-accent-text">Your name is what makes this a record.</span></div>{reviewMessages.length > 0 && <label className="m-4 flex items-start gap-3 text-sm leading-relaxed"><input type="checkbox" checked={warningsAcknowledged} onChange={e => setWarningsAcknowledged(e.target.checked)} className="mt-1 h-6 w-6 shrink-0" /><span>I checked each review item against this work and corrected the record or verified why it does not apply.</span></label>}<button onClick={toggleApproval} role="checkbox" aria-checked={approved} className={`m-4 flex w-[calc(100%-2rem)] items-start gap-3 border-[1.5px] p-4 text-left ${approved ? 'border-ok bg-ok-tint text-ok-text' : 'border-ink bg-sheet text-ink'}`}><span className={`mt-0.5 grid h-[30px] w-[30px] shrink-0 place-items-center border-2 ${approved ? 'border-ok bg-ok text-white' : 'border-[#CFC8BE] bg-sheet'}`}>{approved && <Check size={20} strokeWidth={3} />}</span><span><span className="block font-semibold">I gave this talk, I've read what's in it, and it's accurate.</span><span className="snd-mono mt-2 block text-xs">{currentUser?.name || editedTalk.supervisor || 'Your name'} · {currentUser?.customTrade || currentUser?.trade || 'Site Safety'} · {editedTalk.date}</span></span></button></div></section>}
-    <div className="fixed inset-x-0 bottom-0 border-t border-rule bg-[rgba(250,247,242,.97)] px-5 py-3 backdrop-blur"><div className="mx-auto flex max-w-[760px] items-center justify-between gap-3"><button onClick={() => step === 1 ? persist(editedTalk, 1) : changeStep((step - 1) as 1 | 2)} className="min-h-12 border border-ink px-4 text-sm font-semibold text-ink">{step === 1 ? 'Save draft' : <><ArrowLeft className="mr-1 inline" size={16} /> Back</>}</button><span className="snd-mono hidden text-right text-xs text-ink-faint sm:block">{step === 3 && !approved ? 'Nothing sends until you sign' : 'Saved on device'}</span><button onClick={proceed} disabled={sending} className={`min-h-14 px-5 font-bold ${step === 3 && !approved ? 'bg-[#F0EBE3] text-ink-faint' : 'bg-accent text-white hover:bg-accent-hover'}`}>{sending ? 'Sending…' : step === 1 ? 'Next — the crew' : step === 2 ? 'Next — send it' : approved ? `Send to ${editedTalk.recipients.filter((recipient) => recipient.selected).length}` : 'Sign to send'} {step < 3 && <ArrowRight className="ml-2 inline" size={18} />}</button></div></div>
+    {step === 2 && <section className="pt-9"><h1 className="max-w-[24ch] text-[30px] font-bold leading-[1.14] tracking-[-.022em] text-ink">Who stood there and listened?</h1><p className="mt-3 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">Check everyone who is here, including returning crew, and add anyone new. This is the part an investigator reads first.</p><div className="mt-7 border border-rule bg-sheet p-4"><div className="grid grid-cols-[auto_1fr] items-center gap-3"><span className="snd-mono text-[32px] font-semibold text-ink">{present}</span><span className="snd-mono text-sm text-ink-faint">of {editedTalk.attendees.length}</span></div></div><div className="mt-4"><QuickAttendance attendees={editedTalk.attendees} onUpdateAttendees={updateAttendees} recentNames={recentNames} onRemoveRecentName={onRemoveRecentName} /></div><div className="mt-7 border border-rule bg-sheet p-4"><p className="snd-label text-ink-muted">Where and when</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold text-ink">Location<input value={editedTalk.location} onChange={(event) => setEditedTalk((current) => ({ ...current, location: event.target.value }))} className={fieldClass} placeholder="Where did this happen?" /></label><label className="text-sm font-semibold text-ink">Project<input value={editedTalk.projectNumber} onChange={(event) => setEditedTalk((current) => ({ ...current, projectNumber: event.target.value }))} className={`${fieldClass} snd-mono text-sm`} placeholder="Project number" /></label><label className="text-sm font-semibold text-ink sm:col-span-2">Weather<input value={editedTalk.weather} onChange={(event) => setEditedTalk((current) => ({ ...current, weather: event.target.value }))} className={`${fieldClass} snd-mono text-sm`} placeholder="Pulled from the site's coordinates · edit if it's wrong" /></label></div></div></section>}
+    {step === 3 && <section className="pt-9"><h1 className="max-w-[24ch] text-[30px] font-bold leading-[1.14] tracking-[-.022em] text-ink">Sign it, then it's out of your hands.</h1><p className="mt-3 max-w-[56ch] text-[17px] leading-[1.6] text-ink-body">One read-through, your name on it, and the PDF goes to the people who need it. You keep a copy either way.</p><div className="mt-7 border border-rule bg-sheet p-4"><div className="flex items-center justify-between"><p className="snd-label text-ink-muted">The record</p><button onClick={() => openTalkPdf(editedTalk)} className="snd-label min-h-11 text-accent">Read it in full</button></div><dl className="mt-4 divide-y divide-rule-soft"><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Topic</dt><dd className="text-right font-medium text-ink">{editedTalk.title || 'Not set'}</dd></div><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Crew</dt><dd className="snd-mono text-sm text-ink">{present} of {editedTalk.attendees.length} present</dd></div><div className="flex justify-between gap-5 py-3"><dt className="snd-label text-ink-muted">Where</dt><dd className="snd-mono text-right text-sm text-ink">{editedTalk.location || 'Not set'} · {editedTalk.projectNumber || '—'}</dd></div></dl></div><div className="mt-7"><RecipientsSelector recipients={editedTalk.recipients} onUpdateRecipients={(recipients) => setEditedTalk((current) => ({ ...current, recipients }))} /></div><div className="mt-7 border border-rule"><div className="bg-accent-tint px-4 py-3"><span className="snd-label border border-[#F5D5B8] bg-sheet px-2 py-1 text-accent-text">Human sign-off</span><span className="ml-3 text-sm font-medium text-accent-text">Your name is what makes this a record.</span></div>{reviewMessages.length > 0 && <label className="m-4 flex items-start gap-3 text-sm leading-relaxed"><input type="checkbox" checked={warningsAcknowledged} onChange={e => setWarningsAcknowledged(e.target.checked)} className="mt-1 h-6 w-6 shrink-0" /><span>I checked each review item against this work and corrected the record or verified why it does not apply.</span></label>}<button onClick={toggleApproval} role="checkbox" aria-checked={approved} className={`m-4 flex w-[calc(100%-2rem)] items-start gap-3 border-[1.5px] p-4 text-left ${approved ? 'border-ok bg-ok-tint text-ok-text' : 'border-ink bg-sheet text-ink'}`}><span className={`mt-0.5 grid h-[30px] w-[30px] shrink-0 place-items-center border-2 ${approved ? 'border-ok bg-ok text-white' : 'border-[#CFC8BE] bg-sheet'}`}>{approved && <Check size={20} strokeWidth={3} />}</span><span><span className="block font-semibold">I gave this talk, I've read what's in it, and it's accurate.</span><span className="snd-mono mt-2 block text-xs">{currentUser?.name || editedTalk.supervisor || 'Your name'} · {currentUser?.customTrade || currentUser?.trade || 'Site Safety'} · {editedTalk.date}</span></span></button></div></section>}
+    <div className="fixed inset-x-0 bottom-0 border-t border-rule bg-[rgba(250,247,242,.97)] px-5 pt-3 pb-[max(.75rem,env(safe-area-inset-bottom))] backdrop-blur"><p role="status" className="snd-mono mb-2 text-center text-xs text-ink-muted sm:hidden">{saving ? 'Saving…' : dirty ? 'Changes not saved yet' : 'Draft saved'}</p><div className="mx-auto flex max-w-[760px] items-center justify-between gap-3"><button onClick={() => step === 1 ? persist(editedTalk, 1) : changeStep((step - 1) as 1 | 2)} className="min-h-12 border border-ink px-4 text-sm font-semibold text-ink">{step === 1 ? 'Save draft' : <><ArrowLeft className="mr-1 inline" size={16} /> Back</>}</button><span className="snd-mono hidden text-right text-xs text-ink-faint sm:block">{step === 3 && !approved ? 'Nothing sends until you sign' : saving ? 'Saving…' : dirty ? 'Changes not saved yet' : 'Draft saved'}</span><button onClick={proceed} disabled={sending} className={`min-h-14 px-5 font-bold ${step === 3 && !approved ? 'bg-[#F0EBE3] text-ink-faint' : 'bg-accent text-white hover:bg-accent-hover'}`}>{sending ? 'Sending…' : step === 1 ? 'Next — the crew' : step === 2 ? 'Next — send it' : approved ? `Send to ${editedTalk.recipients.filter((recipient) => recipient.selected).length}` : 'Sign to send'} {step < 3 && <ArrowRight className="ml-2 inline" size={18} />}</button></div></div>
+    </fieldset>
   </main>;
-};
+});
