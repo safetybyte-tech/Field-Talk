@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.mjs worker/tests/*.test.mjs",
     "test:browser": "playwright test",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test:mobile": "playwright test --config=playwright.mobile.config.mjs",
+    "test:acceptance": "playwright test --config=playwright.acceptance.config.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",

@@ -20,11 +20,19 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+        # Compile-only fixtures: this workflow never publishes a deployment.
+        env:
+          VITE_SUPABASE_URL: https://supabase.invalid
+          VITE_SUPABASE_ANON_KEY: fixture-only
+          VITE_WORKER_URL: https://worker.invalid
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:browser -- --workers=2
+      - run: npm run test:mobile -- --workers=2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: browser-validation
-          path: test-results/
+          path: |
+            test-results/
+            mobile-results/
           retention-days: 14

@@ -32,3 +32,5 @@ worker/.wrangler
 test-results/
 playwright-report/
 *.tsbuildinfo
+acceptance-results/
+mobile-results/
