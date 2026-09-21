@@ -35,8 +35,8 @@ Scope: existing product, synthetic local accounts/services. Earlier draft/mobile
 ## External acceptance still open
 
 - Configure Preview with designated test Supabase/Worker values and a test inbox.
-- Apply/verify the migration against that environment's actual talks schema, then deploy Worker and frontend in the documented order.
+- Provision the separate test environment and apply its schema before deploying its Worker/frontend. Production migration, Worker and frontend rollout are complete; see ACCEPTANCE-RESULTS.md.
 - Real confirmation/reset/expired-link, generation, received email/PDF and persisted-record checks.
 - Physical iPhone Safari/Android Chrome keyboards, microphones, rotation and background/connectivity recovery.
 
-These were not silently marked passed, and production was not changed.
+These acceptance checks are still open. Production was subsequently updated under explicit user authorization; deployment evidence is in ACCEPTANCE-RESULTS.md.

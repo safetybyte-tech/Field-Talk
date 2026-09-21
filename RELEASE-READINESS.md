@@ -2,7 +2,7 @@
 
 # Release-readiness pass — September 19, 2026
 
-**September 20 follow-up:** [ACCEPTANCE-RESULTS.md](ACCEPTANCE-RESULTS.md) supersedes the initial gate status. Delivery recovery now has a reproducible failing test; the branch preview also lacked build configuration. Do not treat the initial green regression run below as release approval.
+**Historical report:** the remaining-issues list and test counts below describe the initial pass. The duplicate-delivery defect, dependency advisories, missing icons and account/history findings were subsequently fixed. Automated regression gates pass and production deployment is complete. [ACCEPTANCE-RESULTS.md](ACCEPTANCE-RESULTS.md) is the current source for rollout evidence and outstanding real-service/device checks.
 
 ## Scope and disposition
 

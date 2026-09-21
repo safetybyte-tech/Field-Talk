@@ -29,7 +29,7 @@ See [RELEASE-READINESS.md](RELEASE-READINESS.md) for the pass results, reproduce
 
 ## Release acceptance gates
 
-`npm run test:acceptance` exercises email acceptance followed by a failed database write and retry. **It currently fails:** the retry sends twice. The separate **Delivery release gate** CI job makes this unresolved defect visible; a green ordinary regression suite is not release approval.
+`npm run test:acceptance` protects delivery recovery after provider acceptance, failed filing, reloads and lost responses. The duplicate-email regression is fixed and the **Delivery release gate** passes. These controlled tests do not replace real inbox and physical-device acceptance.
 
 `npm run build` now requires `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_WORKER_URL`. Configure all three for Cloudflare **Preview** as well as Production, using the corresponding environment's public frontend values. Never put service-role secrets in these variables. CI uses fake endpoints only for compilation and does not publish that bundle.
 
