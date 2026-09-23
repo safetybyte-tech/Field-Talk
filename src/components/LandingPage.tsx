@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Mail, Lock, UserPlus, User } from 'lucide-react';
+import { Mail, Lock, UserPlus, User } from 'lucide-react';
 import { auth } from '../utils/auth';
 import { User as UserType } from '../types';
 
@@ -18,6 +18,8 @@ function formatAuthError(error: unknown): string {
 
   return error instanceof Error ? error.message : 'An error occurred. Please try again.';
 }
+
+const fieldClass = 'mt-2 min-h-[52px] w-full border border-rule bg-sheet pl-11 pr-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none';
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onLogin,
@@ -173,161 +175,131 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const isReset = mode === 'reset';
 
   const headingText = isLogin
-    ? 'Welcome Back'
+    ? 'Welcome back'
     : isSignup
-      ? 'Create Account'
+      ? 'Create your account'
       : isForgot
-        ? 'Reset Password'
-        : 'Set New Password';
+        ? 'Reset your password'
+        : 'Set a new password';
 
   const subheadingText = isLogin
-    ? 'Sign in to access your toolbox talks'
+    ? 'Sign in to your toolbox talks'
     : isSignup
       ? 'Get started with your safety documentation'
       : isForgot
-        ? 'Enter your email and we will send a reset link'
+        ? "Enter your email and we'll send a reset link"
         : 'Enter a new password for your account';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="bg-primary-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Shield className="text-white" size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-secondary-900 mb-2">
-            Field Talk
-          </h1>
-          <p className="text-secondary-600">
-            Mobile toolbox talk generator for construction sites
-          </p>
+    <div className="min-h-screen bg-ground px-5 py-10">
+      <div className="mx-auto w-full max-w-[420px]">
+        <div className="text-center">
+          <span className="block text-[24px] font-bold tracking-[-.025em] text-ink">Field Talk</span>
+          <span className="snd-label mt-1 block text-accent">Safety Net Dispatch</span>
+          <p className="mt-4 text-[15px] text-ink-body">Mobile toolbox talk generator for construction sites</p>
         </div>
 
-        {/* Auth Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-center text-secondary-900 mb-2">
-              {headingText}
-            </h2>
-            <p className="text-center text-secondary-600">
-              {subheadingText}
-            </p>
-          </div>
+        <div className="mt-8 border border-rule bg-sheet p-6">
+          <h1 className="text-[22px] font-bold tracking-[-.02em] text-ink">{headingText}</h1>
+          <p className="mt-1 text-[15px] text-ink-muted">{subheadingText}</p>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <div role="alert" className="mt-5 border border-stop bg-stop-tint px-4 py-3 text-sm text-stop-text">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+            <div role="status" className="mt-5 border border-ok bg-ok-tint px-4 py-3 text-sm text-ok-text">
               {success}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             {!isReset && (
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  Email Address
-                </label>
+                <label className="snd-label text-ink-muted">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={fieldClass}
                     placeholder="your@email.com"
                   />
                 </div>
               </div>
             )}
 
-            {/* Username (Register only) */}
             {isSignup && (
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  Username
-                </label>
+                <label className="snd-label text-ink-muted">Username</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                   <input
                     type="text"
                     required
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={fieldClass}
                     placeholder="username"
                   />
                 </div>
               </div>
             )}
 
-            {/* Full Name (Register only) */}
             {isSignup && (
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  Full Name
-                </label>
+                <label className="snd-label text-ink-muted">Full name</label>
                 <div className="relative">
-                  <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
+                  <UserPlus className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={fieldClass}
                     placeholder="John Smith"
                   />
                 </div>
               </div>
             )}
 
-            {/* Password */}
             {!isForgot && (
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  {isReset ? 'New Password' : 'Password'}
-                </label>
+                <label className="snd-label text-ink-muted">{isReset ? 'New password' : 'Password'}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                   <input
                     type="password"
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="••••••••"
+                    className={fieldClass}
+                    placeholder="********"
                     minLength={isSignup || isReset ? 6 : 1}
                   />
                 </div>
                 {(isSignup || isReset) && (
-                  <p className="text-xs text-secondary-500 mt-1">
-                    Minimum 6 characters
-                  </p>
+                  <p className="snd-mono mt-2 text-xs text-ink-faint">Minimum 6 characters</p>
                 )}
               </div>
             )}
 
             {isReset && (
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-1">
-                  Confirm New Password
-                </label>
+                <label className="snd-label text-ink-muted">Confirm new password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                   <input
                     type="password"
                     required
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="••••••••"
+                    className={fieldClass}
+                    placeholder="********"
                     minLength={6}
                   />
                 </div>
@@ -335,37 +307,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             )}
 
             {isForgot && (
-              <p className="text-xs text-secondary-500">
+              <p className="text-sm text-ink-muted">
                 Check your spam folder if you do not see the email. Reset links expire for security.
               </p>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-             className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-3 px-4 rounded-lg font-medium text-lg transition-colors"
+              className="min-h-14 w-full bg-accent px-4 text-lg font-bold text-white transition-colors hover:bg-accent-hover active:bg-accent-press disabled:bg-[#F0EBE3] disabled:text-ink-faint"
             >
               {loading
                 ? 'Please wait...'
                 : isLogin
-                  ? 'Sign In'
+                  ? 'Sign in'
                   : isSignup
-                    ? 'Create Account'
+                    ? 'Create account'
                     : isForgot
-                      ? 'Send Reset Email'
-                      : 'Update Password'
+                      ? 'Send reset email'
+                      : 'Update password'
               }
             </button>
           </form>
 
-          {/* Toggle Mode */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 border-t border-rule-soft pt-5 text-center">
             {(isLogin || isSignup) && (
               <button
                 type="button"
                 onClick={toggleMode}
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="min-h-11 font-semibold text-accent"
               >
                 {isLogin
                   ? "Don't have an account? Sign up"
@@ -374,11 +344,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </button>
             )}
             {isLogin && (
-              <div className="mt-3">
+              <div className="mt-1">
                 <button
                   type="button"
                   onClick={showForgotPassword}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  className="min-h-11 text-sm font-semibold text-accent"
                 >
                   Forgot your password?
                 </button>
@@ -388,7 +358,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={backToLogin}
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="min-h-11 font-semibold text-accent"
               >
                 Back to sign in
               </button>
@@ -397,7 +367,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={backFromReset}
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="min-h-11 font-semibold text-accent"
               >
                 Back to sign in
               </button>
@@ -405,15 +375,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-secondary-500">
-          <p>Secure • Fast • Mobile-First</p>
-          <p className="mt-2 text-xs text-secondary-400">
-            Built by{' '}
-            <a
-              href="https://nickrogoff.com"
-              className="text-secondary-500 hover:text-secondary-600 underline-offset-2 hover:underline"
-            >
+        <div className="mt-8 text-center">
+          <p className="snd-mono text-xs text-ink-faint">Secure &middot; Fast &middot; Mobile-first</p>
+          <p className="mt-2 text-xs text-ink-faint">
+            A{' '}
+            <a href="https://safetynetdispatch.com" className="text-ink-muted underline-offset-2 hover:text-accent hover:underline">
+              Safety Net Dispatch
+            </a>
+            {' '}tool, built by{' '}
+            <a href="https://nickrogoff.com" className="text-ink-muted underline-offset-2 hover:text-accent hover:underline">
               Nick Rogoff
             </a>
             .

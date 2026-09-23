@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Mail, Save, Key, LogOut } from 'lucide-react';
+import { ArrowLeft, Mail, Save, Key, LogOut } from 'lucide-react';
 import { User as UserType } from '../types';
 import { auth } from '../utils/auth';
 
@@ -9,6 +9,8 @@ interface UserProfileProps {
   onUpdateUser: (user: UserType) => void;
   onLogout: () => void | Promise<void>;
 }
+
+const fieldClass = 'mt-2 min-h-[52px] w-full border border-rule bg-sheet px-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none';
 
 export const UserProfile: React.FC<UserProfileProps> = ({
   user,
@@ -129,96 +131,81 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     editedUser.customTrade !== user.customTrade;
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <main className="mx-auto max-w-[640px] px-5 pb-32 pt-8">
+      <div className="flex items-center gap-3">
         <button
           onClick={onBack}
           aria-label="Back to dashboard"
-          className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="grid h-11 w-11 shrink-0 place-items-center border border-rule bg-sheet text-ink hover:border-accent"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold">User Profile</h1>
-          <p className="text-gray-600">Manage your account settings</p>
+          <h1 className="text-[24px] font-bold tracking-[-.02em] text-ink">User Profile</h1>
+          <p className="text-sm text-ink-muted">Manage your account settings</p>
         </div>
       </div>
 
-      {/* Profile Card */}
-      <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
-        {/* Status Messages */}
+      <div className="mt-6 space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div role="alert" className="border border-stop bg-stop-tint px-4 py-3 text-sm text-stop-text">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <div role="status" className="border border-ok bg-ok-tint px-4 py-3 text-sm text-ok-text">
             {success}
           </div>
         )}
 
-        {/* Profile Information */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <User className="text-primary-600" size={20} />
-            Profile Information
-          </h2>
+        <div className="border border-rule bg-sheet p-4">
+          <h2 className="snd-label text-ink-muted">Profile information</h2>
 
-          <div className="space-y-4">
+          <div className="mt-4 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
+              <label className="text-sm font-semibold text-ink">Full name</label>
               <input
                 type="text"
                 value={editedUser.name}
-                onChange={(e) => setEditedUser({...editedUser, name: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
+                className={fieldClass}
                 placeholder="Your full name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
+              <label className="text-sm font-semibold text-ink">Username</label>
               <input
                 type="text"
                 value={editedUser.username}
-                onChange={(e) => setEditedUser({...editedUser, username: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={(e) => setEditedUser({ ...editedUser, username: e.target.value })}
+                className={fieldClass}
                 placeholder="Your username"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
+              <label className="text-sm font-semibold text-ink">Email address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={18} />
                 <input
                   type="email"
                   value={editedUser.email}
                   disabled
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  className={`${fieldClass} cursor-not-allowed bg-ground pl-11 text-ink-muted`}
                   placeholder="your@email.com"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="snd-mono mt-2 text-xs text-ink-faint">Email cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trade/Role
-              </label>
+              <label className="text-sm font-semibold text-ink">Trade/role</label>
               <select
                 value={editedUser.trade || ''}
-                onChange={(e) => setEditedUser({...editedUser, trade: e.target.value})}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={(e) => setEditedUser({ ...editedUser, trade: e.target.value })}
+                className={fieldClass}
               >
                 <option value="">Select your trade or role</option>
                 {trades.map((trade) => (
@@ -230,14 +217,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
               {editedUser.trade === 'Other' && (
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Please specify your trade/role
-                  </label>
+                  <label className="text-sm font-semibold text-ink">Please specify your trade/role</label>
                   <input
                     type="text"
                     value={editedUser.customTrade || ''}
-                    onChange={(e) => setEditedUser({...editedUser, customTrade: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    onChange={(e) => setEditedUser({ ...editedUser, customTrade: e.target.value })}
+                    className={fieldClass}
                     placeholder="Enter your specific trade or role"
                   />
                 </div>
@@ -246,38 +231,37 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           </div>
         </div>
 
-        {/* Password Change */}
-        <div className="border-t pt-6">
-          <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+        <div className="border border-rule bg-sheet p-4">
+          <h2 className="snd-label text-ink-muted">Change password</h2>
 
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              className="mt-4 flex min-h-12 items-center gap-2 border border-ink px-5 text-sm font-semibold text-ink hover:border-accent"
             >
-              <Key size={20} />
-              Change Password
+              <Key size={18} />
+              Change password
             </button>
           ) : (
-            <div className="space-y-4">
+            <div className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="text-sm font-semibold text-ink">New password</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={fieldClass}
                   placeholder="New password (min 6 characters)"
                   minLength={6}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <label className="text-sm font-semibold text-ink">Confirm new password</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={fieldClass}
                   placeholder="Confirm new password"
                   minLength={6}
                 />
@@ -286,9 +270,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <button
                   onClick={handleChangePassword}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                  className="min-h-12 bg-accent px-5 font-bold text-white hover:bg-accent-hover disabled:bg-[#F0EBE3] disabled:text-ink-faint"
                 >
-                  {loading ? 'Saving...' : 'Update Password'}
+                  {loading ? 'Saving...' : 'Update password'}
                 </button>
                 <button
                   onClick={() => {
@@ -296,7 +280,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                     setNewPassword('');
                     setConfirmPassword('');
                   }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="min-h-12 border border-ink px-5 text-sm font-semibold text-ink hover:border-accent"
                 >
                   Cancel
                 </button>
@@ -305,13 +289,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           )}
         </div>
 
-        {/* Account Info */}
-        <div className="border-t pt-6">
-          <h2 className="text-lg font-semibold mb-4">Account Information</h2>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+        <div className="border border-rule bg-sheet p-4">
+          <h2 className="snd-label text-ink-muted">Account information</h2>
+          <div className="mt-4 space-y-2 border border-rule bg-ground p-3">
             <div className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-600">Account Created:</span>
-              <span className="font-medium">
+              <span className="text-ink-muted">Account created</span>
+              <span className="font-medium text-ink">
                 {new Date(user.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -322,41 +305,38 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               </span>
             </div>
             <div className="flex justify-between gap-3 text-sm">
-              <span className="text-gray-600">User ID:</span>
-              <span className="min-w-0 break-all text-right font-mono text-xs">{user.id}</span>
+              <span className="text-ink-muted">User ID</span>
+              <span className="snd-mono min-w-0 break-all text-right text-xs text-ink">{user.id}</span>
             </div>
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3">
           <button
             onClick={handleSaveProfile}
             disabled={loading || !hasChanges}
-            className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            className="flex min-h-14 flex-1 items-center justify-center gap-2 bg-accent px-5 font-bold text-white hover:bg-accent-hover disabled:bg-[#F0EBE3] disabled:text-ink-faint"
           >
             <Save size={20} />
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? 'Saving...' : 'Save changes'}
           </button>
 
           <button
             onClick={onBack}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="min-h-14 border border-ink px-5 text-sm font-semibold text-ink hover:border-accent"
           >
             Cancel
           </button>
         </div>
 
-        <div className="border-t pt-6">
-          <button
-            onClick={() => void onLogout()}
-            className="flex w-full items-center justify-center gap-2 border border-red-200 bg-red-50 px-4 py-3 font-medium text-red-700 transition-colors hover:bg-red-100"
-          >
-            <LogOut size={18} />
-            Sign out
-          </button>
-        </div>
+        <button
+          onClick={() => void onLogout()}
+          className="flex min-h-14 w-full items-center justify-center gap-2 border border-stop bg-stop-tint px-4 font-semibold text-stop-text hover:bg-[#FBDBD8]"
+        >
+          <LogOut size={18} />
+          Sign out
+        </button>
       </div>
-    </div>
+    </main>
   );
 };

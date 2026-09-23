@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Send, Clock, Calendar, Users, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Calendar, Users, Trash2 } from 'lucide-react';
 import { ToolboxTalk } from '../types';
 
 interface OutboxProps {
@@ -30,80 +30,42 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onBack}
-          aria-label="Back to dashboard"
-          className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold">Outbox</h1>
-          <p className="text-gray-600">
-            {unsubmittedTalks.length} draft{unsubmittedTalks.length !== 1 ? 's' : ''} pending
-          </p>
-        </div>
-      </div>
+    <main className="mx-auto max-w-[760px] px-5 pb-32 pt-8">
+      <button onClick={onBack} aria-label="Back to dashboard" className="flex min-h-11 items-center gap-2 text-sm font-semibold text-ink hover:text-accent">
+        <ArrowLeft size={18} /> Dashboard
+      </button>
+      <h1 className="mt-4 text-[30px] font-bold tracking-[-.02em] text-ink">Outbox</h1>
+      <p className="mt-2 text-[15px] text-ink-muted">
+        {unsubmittedTalks.length} draft{unsubmittedTalks.length !== 1 ? 's' : ''} pending
+      </p>
 
-      {/* Unsubmitted Drafts */}
       {unsubmittedTalks.length > 0 && (
-        <div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-blue-800">
-              <Clock size={20} className="text-blue-600" />
-              Draft Toolbox Talks ({unsubmittedTalks.length})
-            </h2>
-            <p className="text-sm text-blue-700 mb-3">
-              These are saved drafts that haven't been submitted yet. Click on any draft to continue editing and submit.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {unsubmittedTalks.map((talk) => {
+        <div className="mt-8">
+          <h2 className="snd-label text-ink-muted">Draft toolbox talks ({unsubmittedTalks.length})</h2>
+          <div className="mt-3 border border-rule bg-sheet">
+            {unsubmittedTalks.map((talk, index) => {
               const presentCount = talk.attendees.filter(a => a.present).length;
 
               return (
-                <div
-                  key={talk.id}
-                  className="bg-white border-l-4 border-blue-400 border border-blue-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => onEditTalk(talk.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1 break-words">
-                      <h3 className="font-medium text-lg">{talk.title || 'Untitled Talk'}</h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          {talk.date}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users size={16} />
-                          {presentCount} attendees
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Created: {formatDate(talk.createdAt)}
-                      </p>
+                <div key={talk.id} className={`flex min-h-16 items-start justify-between gap-3 px-4 py-3 ${index ? 'border-t border-rule-soft' : ''}`}>
+                  <button onClick={() => onEditTalk(talk.id)} className="min-w-0 flex-1 text-left hover:bg-ground">
+                    <span className="block break-words font-semibold text-ink">{talk.title || 'Untitled talk'}</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+                      <span className="flex items-center gap-1"><Calendar size={14} />{talk.date}</span>
+                      <span className="flex items-center gap-1"><Users size={14} />{presentCount} attendees</span>
                     </div>
+                    <p className="snd-mono mt-1 text-xs text-ink-faint">Created {formatDate(talk.createdAt)}</p>
+                  </button>
 
-                    <div className="ml-2 shrink-0">
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                        Draft
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteTalk(talk.id);
-                        }}
-                        className="ml-1 min-h-11 min-w-11 p-2 text-gray-500 hover:text-red-600 transition-colors"
-                        title="Delete this toolbox talk"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="snd-label border border-[#F3E2C7] bg-caution-tint px-2 py-1 text-caution-text">Draft</span>
+                    <button
+                      onClick={() => deleteTalk(talk.id)}
+                      aria-label="Delete this toolbox talk"
+                      className="grid min-h-11 min-w-11 shrink-0 place-items-center text-ink-muted hover:text-stop-text"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               );
@@ -112,69 +74,45 @@ export const Outbox: React.FC<OutboxProps> = ({ talks, onBack, onDeleteTalk, onE
         </div>
       )}
 
-      {/* Submitted History */}
       {submittedTalks.length > 0 && (
-        <div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-green-800">
-              <Send size={20} className="text-green-600" />
-              Submitted ({submittedTalks.length})
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {submittedTalks.map((talk) => {
+        <div className="mt-8">
+          <h2 className="snd-label text-ink-muted flex items-center gap-2"><Send size={14} /> Submitted ({submittedTalks.length})</h2>
+          <div className="mt-3 border border-rule bg-sheet">
+            {submittedTalks.map((talk, index) => {
               const presentCount = talk.attendees.filter(a => a.present).length;
 
               return (
-                <div
+                <button
                   key={talk.id}
-                  className="bg-white border-l-4 border-green-400 border border-green-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => onEditTalk(talk.id)}
+                  className={`flex min-h-16 w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-ground ${index ? 'border-t border-rule-soft' : ''}`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1 break-words">
-                      <h3 className="font-medium text-lg">{talk.title || 'Untitled Talk'}</h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          {talk.date}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users size={16} />
-                          {presentCount} attendees
-                        </div>
-                      </div>
-                      {talk.submittedAt && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Submitted: {formatDate(talk.submittedAt)}
-                        </p>
-                      )}
+                  <div className="min-w-0 flex-1">
+                    <span className="block break-words font-semibold text-ink">{talk.title || 'Untitled talk'}</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+                      <span className="flex items-center gap-1"><Calendar size={14} />{talk.date}</span>
+                      <span className="flex items-center gap-1"><Users size={14} />{presentCount} attendees</span>
                     </div>
-
-                    <div className="ml-2 shrink-0">
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                        Submitted
-                      </span>
-                    </div>
+                    {talk.submittedAt && <p className="snd-mono mt-1 text-xs text-ink-faint">Submitted {formatDate(talk.submittedAt)}</p>}
                   </div>
-                </div>
+
+                  <span className="snd-label shrink-0 border border-[#BDE7C9] bg-ok-tint px-2 py-1 text-ok-text">Sent</span>
+                </button>
               );
             })}
           </div>
         </div>
       )}
 
-      {/* Empty State */}
       {unsubmittedTalks.length === 0 && submittedTalks.length === 0 && (
-        <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
-          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Send size={32} className="text-green-600" />
+        <div className="mt-8 border border-rule bg-sheet px-4 py-12 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center border border-[#BDE7C9] bg-ok-tint">
+            <Send size={24} className="text-ok-text" />
           </div>
-          <p className="text-lg font-medium text-gray-700">All caught up!</p>
-          <p className="text-sm text-gray-500">No toolbox talks yet</p>
+          <p className="mt-4 text-[17px] font-semibold text-ink">All caught up!</p>
+          <p className="mt-1 text-sm text-ink-muted">No toolbox talks yet</p>
         </div>
       )}
-    </div>
+    </main>
   );
 };

@@ -15,9 +15,9 @@ const CitationBadges: React.FC<{ citations: TalkCitation[] }> = ({ citations }) 
           target="_blank"
           rel="noopener noreferrer"
           title={`${citation.title || citation.subpart_title || 'OSHA standard'} — view on eCFR (unofficial text; verify against the official CFR)`}
-          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white min-h-11 px-3 py-2 text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-700"
+          className="snd-mono inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-sheet px-3 py-2 text-xs font-medium text-ink-muted hover:border-accent hover:text-accent-text"
         >
-          <ExternalLink size={10} />
+          <ExternalLink size={12} />
           29 CFR {citation.citation}
         </a>
       ))}
@@ -30,6 +30,14 @@ interface StructuredTalkDisplayProps {
   isEditable?: boolean;
   onContentChange?: (content: StructuredTalkContent) => void;
 }
+
+type Severity = 'stop' | 'caution' | 'neutral';
+
+const severityClasses: Record<Severity, { label: string; icon: string }> = {
+  stop: { label: 'text-stop-text', icon: 'text-stop' },
+  caution: { label: 'text-caution-text', icon: 'text-caution' },
+  neutral: { label: 'text-ink-muted', icon: 'text-ink-faint' },
+};
 
 export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
   content,
@@ -78,55 +86,13 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
     }
   };
 
-  const sections = [
-    {
-      key: 'hazards' as keyof StructuredTalkContent,
-      title: 'Hazards',
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200'
-    },
-    {
-      key: 'practices' as keyof StructuredTalkContent,
-      title: 'Pre-Task Planning',
-      icon: CheckCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
-    },
-    {
-      key: 'ppe' as keyof StructuredTalkContent,
-      title: 'Personal Protective Equipment (PPE)',
-      icon: Shield,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    },
-    {
-      key: 'sif' as keyof StructuredTalkContent,
-      title: 'Serious Injury/Fatality Prevention',
-      icon: AlertTriangle,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200'
-    },
-    {
-      key: 'manual' as keyof StructuredTalkContent,
-      title: 'Material Handling',
-      icon: Wrench,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200'
-    },
-    {
-      key: 'q' as keyof StructuredTalkContent,
-      title: 'Discussion Questions',
-      icon: HelpCircle,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-200'
-    }
+  const sections: { key: keyof StructuredTalkContent; title: string; icon: typeof AlertTriangle; severity: Severity }[] = [
+    { key: 'hazards', title: 'Hazards', icon: AlertTriangle, severity: 'caution' },
+    { key: 'practices', title: 'Pre-Task Planning', icon: CheckCircle, severity: 'neutral' },
+    { key: 'ppe', title: 'Personal Protective Equipment (PPE)', icon: Shield, severity: 'neutral' },
+    { key: 'sif', title: 'Serious Injury/Fatality Prevention', icon: AlertTriangle, severity: 'stop' },
+    { key: 'manual', title: 'Material Handling', icon: Wrench, severity: 'neutral' },
+    { key: 'q', title: 'Discussion Questions', icon: HelpCircle, severity: 'neutral' },
   ];
 
   const citations = content.citations ?? [];
@@ -134,101 +100,106 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
     citations.filter((citation) => citation.sections?.includes(key));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Introduction */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FileText className="text-gray-600" size={20} />
-          <h3 className="text-lg font-semibold text-gray-800">Introduction</h3>
+      <div className="border border-rule bg-sheet">
+        <div className="flex items-center gap-2 border-b border-rule-soft px-4 py-3">
+          <FileText className="text-ink-faint" size={16} />
+          <span className="snd-label text-ink-muted">Introduction</span>
         </div>
-        {isEditable ? (
-          <AutoSizeTextarea
-            aria-label="Introduction"
-            value={content.i}
-            onChange={(e) => updateContent('i', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg text-base leading-relaxed resize-none"
-            placeholder="1-2 sentences introducing the task and safety importance..."
-          />
-        ) : (
-          <p className="text-gray-700 leading-relaxed">{content.i}</p>
-        )}
-        <CitationBadges citations={citationsForSection('i')} />
+        <div className="p-4">
+          {isEditable ? (
+            <AutoSizeTextarea
+              aria-label="Introduction"
+              value={content.i}
+              onChange={(e) => updateContent('i', e.target.value)}
+              className="w-full resize-none border border-rule bg-sheet p-3 text-[16px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+              placeholder="1-2 sentences introducing the task and safety importance..."
+            />
+          ) : (
+            <p className="leading-relaxed text-ink-body">{content.i}</p>
+          )}
+          <CitationBadges citations={citationsForSection('i')} />
+        </div>
       </div>
 
       {/* Structured Sections */}
       {sections.map((section) => {
         const Icon = section.icon;
         const items = content[section.key] as string[];
-        
+        const { label, icon } = severityClasses[section.severity];
+
         return (
-          <div key={section.key} className={`${section.bgColor} border ${section.borderColor} rounded-lg p-4`}>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <Icon className={section.color} size={20} />
-                <h3 className={`text-lg font-semibold ${section.color}`}>{section.title}</h3>
-              </div>
+          <div key={section.key} className="border border-rule bg-sheet">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule-soft px-4 py-3">
+              <span className={`snd-label flex items-center gap-2 ${label}`}>
+                <Icon className={icon} size={16} />
+                {section.title}
+              </span>
               {isEditable && (
                 <button
                   onClick={() => addArrayItem(section.key)}
                   aria-label={`Add ${section.title} item`}
-                  className={`${section.color} min-h-11 shrink-0 px-2 hover:opacity-70 text-sm font-medium`}
+                  className="snd-label min-h-11 shrink-0 px-2 text-accent hover:text-accent-hover"
                 >
-                  + Add Item
+                  + Add item
                 </button>
               )}
             </div>
-            
-            {items.length > 0 ? (
-              <ul className="space-y-2">
-                {items.map((item, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className={`${section.color} mt-1`}>•</span>
-                    {isEditable ? (
-                      <div className="min-w-0 flex-1 flex items-start gap-2">
-                        <AutoSizeTextarea
-                          aria-label={`${section.title} item ${index + 1}`}
-                          value={item}
-                          onChange={(e) => updateArrayItem(section.key, index, e.target.value)}
-                          className="min-w-0 w-full flex-1 min-h-11 p-2 border border-gray-300 rounded text-base leading-relaxed"
-                          placeholder="Add a specific safety action..."
-                        />
-                        <button
-                          onClick={() => removeArrayItem(section.key, index)}
-                          aria-label={`Remove ${section.title} item ${index + 1}`}
-                          className="shrink-0 min-h-11 min-w-11 text-red-600 hover:text-red-700 text-lg px-2"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-700">{item}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 italic">No items added yet</p>
-            )}
-            <CitationBadges citations={citationsForSection(section.key)} />
+
+            <div className="p-4">
+              {items.length > 0 ? (
+                <ul className="space-y-2">
+                  {items.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="mt-1 text-ink-faint">&bull;</span>
+                      {isEditable ? (
+                        <div className="flex min-w-0 flex-1 items-start gap-2">
+                          <AutoSizeTextarea
+                            aria-label={`${section.title} item ${index + 1}`}
+                            value={item}
+                            onChange={(e) => updateArrayItem(section.key, index, e.target.value)}
+                            className="min-h-11 w-full min-w-0 flex-1 border border-rule bg-sheet p-2 text-[16px] leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+                            placeholder="Add a specific safety action..."
+                          />
+                          <button
+                            onClick={() => removeArrayItem(section.key, index)}
+                            aria-label={`Remove ${section.title} item ${index + 1}`}
+                            className="min-h-11 min-w-11 shrink-0 px-2 text-lg text-stop hover:text-stop-text"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-ink-body">{item}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-ink-faint">No items added yet</p>
+              )}
+              <CitationBadges citations={citationsForSection(section.key)} />
+            </div>
           </div>
         );
       })}
 
       {/* Referenced OSHA standards + unofficial-text disclaimer */}
       {citations.length > 0 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Scale className="text-slate-600" size={18} />
-            <h3 className="text-sm font-semibold text-slate-700">Referenced OSHA Standards</h3>
+        <div className="border border-rule bg-ground p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Scale className="text-ink-faint" size={16} />
+            <span className="snd-label text-ink-muted">Referenced OSHA Standards</span>
           </div>
           <ul className="space-y-1">
             {citations.map((citation) => (
-              <li key={citation.citation} className="text-sm text-slate-600">
+              <li key={citation.citation} className="text-sm text-ink-body">
                 <a
                   href={citation.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline"
+                  className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
                 >
                   29 CFR {citation.citation}
                   <ExternalLink size={12} />
@@ -237,13 +208,13 @@ export const StructuredTalkDisplay: React.FC<StructuredTalkDisplayProps> = ({
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-ink-faint">
             OSHA standard text referenced here is unofficial. Verify against the official CFR on{' '}
             <a
               href="https://www.ecfr.gov/current/title-29/subtitle-B/chapter-XVII/part-1926"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-slate-700"
+              className="text-ink-muted underline hover:text-accent"
             >
               eCFR.gov
             </a>
