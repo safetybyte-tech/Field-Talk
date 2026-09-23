@@ -121,3 +121,16 @@ test('PDF, HTML and text carry matching review/sign-off semantics', () => {
     }
   }
 });
+
+test('form review hides diagnostics without changing signed record review', () => {
+  const talk = record();
+  talk.harness.persisted = false;
+  talk.content = JSON.stringify({ ...content, sif: [], practices: ['One two three four five six seven eight nine ten eleven twelve thirteen fourteen.'] });
+  const complete = review.reviewMessages(talk);
+  const actionable = review.reviewMessages(talk, true);
+  assert.ok(complete.some(message => message.includes('12-word')));
+  assert.ok(complete.some(message => message.includes('audit')));
+  assert.ok(!actionable.some(message => /12-word|audit/.test(message)));
+  assert.ok(actionable.some(message => message.includes('Add serious injury')));
+  assert.equal(JSON.stringify(JSON.parse(review.approvalSnapshot(talk)).review), JSON.stringify(complete));
+});

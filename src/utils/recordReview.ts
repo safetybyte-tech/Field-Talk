@@ -7,13 +7,13 @@ export const REVIEW_DISCLAIMER = 'Automated checks are not a safety approval. Ve
 export const UNSIGNED_STATEMENT = 'Draft - not approved. No human sign-off is recorded for this version.';
 export const SIGNED_STATEMENT = 'The person named above attested that they gave this talk, reviewed this version, and found it accurate.';
 
-export function reviewMessages(talk: ToolboxTalk): string[] {
+export function reviewMessages(talk: ToolboxTalk, actionableOnly = false): string[] {
   const content = parseStructuredTalkContent(talk.content);
   const task = `${talk.notes || ''}\n${talk.title}\n${talk.location}\n${talk.weather}`;
   // Risk screening uses both the original task and current text, including legacy records.
   const risks = getRiskSignals(`${task}\n${content ? [content.i, ...content.hazards].join(' ') : talk.content}`);
-  const current = content ? validateHarnessV2Talk(content, risks, talk.harness?.retrieval.status || 'no_match', task).filter(c => c.status !== 'pass').map(c => c.message) : [];
-  const origin = talk.harness ? harnessMessages({ ...talk.harness, validation: talk.harness.validation.filter(c => c.id === 'citation_support') }) : ['No retrieved OSHA evidence accompanies this record. Verify requirements before use.'];
+  const current = content ? validateHarnessV2Talk(content, risks, talk.harness?.retrieval.status || 'no_match', task).filter(c => c.status !== 'pass' && (!actionableOnly || c.id !== 'item_length')).map(c => c.message) : [];
+  const origin = talk.harness ? harnessMessages({ ...talk.harness, persisted: actionableOnly || talk.harness.persisted, validation: talk.harness.validation.filter(c => c.id === 'citation_support') }) : ['No retrieved OSHA evidence accompanies this record. Verify requirements before use.'];
   return [...new Set([...origin, ...current])];
 }
 
