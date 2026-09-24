@@ -26,7 +26,7 @@
       var props = event.properties || {};
       // Allow only anonymous technical metrics; never forward arbitrary SDK,
       // person, campaign, URL, or application properties.
-      var allowed = ['distinct_id', '$device_id', '$session_id', '$window_id',
+      var allowed = ['token', 'distinct_id', '$device_id', '$session_id', '$window_id',
         '$lib', '$lib_version', '$browser', '$browser_version', '$os', '$os_version',
         '$device_type', '$screen_height', '$screen_width', '$viewport_height',
         '$viewport_width', '$host', '$time', '$insert_id', '$event_type',
