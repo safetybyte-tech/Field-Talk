@@ -62,6 +62,7 @@ export const storage = {
         .from('talks')
         .update(talkToRow(talk, userId))
         .eq('id', talk.id)
+        .eq('user_id', userId)
         .select()
         .single();
       if (error) throw error;
@@ -85,12 +86,13 @@ export const storage = {
   },
 
   /** Fetch a single talk by ID. */
-  getTalk: async (id: string): Promise<ToolboxTalk | null> => {
-    const { data, error } = await supabase
+  getTalk: async (id: string, userId?: string): Promise<ToolboxTalk | null> => {
+    let query = supabase
       .from('talks')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query.single();
     if (error) {
       if (error.code === 'PGRST116') return null; // not found
       throw error;

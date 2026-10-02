@@ -63,5 +63,7 @@ On an available iPhone/Safari and Android/Chrome, record phone/OS/browser and us
 2. Add/check crew, site/weather and a long recipient address; rotate and verify controls remain reachable without sideways scrolling.
 3. Deny microphone permission and type instead; separately allow real dictation and verify transcript/stop behavior.
 4. Review, sign, read/download the PDF, send to the test inbox and reopen the filed record.
-5. Background/resume, lose connectivity during save, restore it and retry without losing edits. Offline closing is not supported as durable draft storage; the UI tells users to keep the page open.
+5. Edit an unsigned talk, lose connectivity, confirm “Saved on this device,” then close and reopen the installed app. Sign in to the same account, recover the latest draft, reconnect and save to the account. Repeat after background eviction and a device restart. Check that another account cannot see the copy and that a newer signed or edited account record is never overwritten. Confirm that recovery alone sends no email.
 6. Run real confirmation/reset/expired-link checks with the test mailbox. Preserve evidence without exposing account secrets.
+
+The October 2 local draft recovery change passes synthetic journal failure tests and Chromium/WebKit close, reopen, account switch, conflict and storage failure tests. Physical app eviction, browser storage persistence and account isolation on actual phones remain open acceptance steps. The earlier September findings above remain as historical results.
