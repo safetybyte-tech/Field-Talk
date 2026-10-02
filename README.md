@@ -29,6 +29,8 @@ See [RELEASE-READINESS.md](RELEASE-READINESS.md) for the pass results, reproduce
 
 ## Release acceptance gates
 
+Unsigned edits are saved in local browser storage for the signed-in account. After reopening, the dashboard offers recovery and checks the account record before saving. If the account record changed, open the local edits as a new draft. Signed and pending-delivery copies stay read only, and recovery never sends email. The editor reports when device storage fails; device storage can be cleared by the browser or user, so confirm its status before closing offline.
+
 `npm run test:acceptance` protects delivery recovery after provider acceptance, failed filing, reloads and lost responses. The duplicate-email regression is fixed and the **Delivery release gate** passes. These controlled tests do not replace real inbox and physical-device acceptance.
 
 `npm run build` now requires `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_WORKER_URL`. Configure all three for Cloudflare **Preview** as well as Production, using the corresponding environment's public frontend values. Never put service-role secrets in these variables. CI uses fake endpoints only for compilation and does not publish that bundle.

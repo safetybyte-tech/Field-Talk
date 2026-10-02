@@ -11,6 +11,8 @@ import { storage } from './utils/storage';
 import { api } from './utils/api';
 import { auth } from './utils/auth';
 import { logger } from './utils/logger';
+import { assertCurrentDelivery, assertCurrentServer, draftJournal, isUnsignedDraft, recoveryState, talkVersion, type RecoveryEntry } from './utils/draftRecovery';
+import { DraftRecoveryPanel } from './components/DraftRecoveryPanel';
 import { Loader2 } from 'lucide-react';
 
 type ViewType = 'dashboard' | 'edit' | 'outbox' | 'profile';
@@ -52,10 +54,22 @@ function App() {
   const [dataError, setDataError] = React.useState('');
   const [actionError, setActionError] = React.useState('');
   const [dataLoading, setDataLoading] = React.useState(false);
+  const [serverLoaded, setServerLoaded] = React.useState(false);
+  const [recoveryEntries, setRecoveryEntries] = React.useState<RecoveryEntry[]>([]);
+  const [recoveryError, setRecoveryError] = React.useState('');
+  const baseVersion = React.useRef<string | null>(null);
   const account = React.useRef<string | null>(null);
   const sessionVersion = React.useRef(0);
   const loadVersion = React.useRef(0);
   const openVersion = React.useRef(0);
+  const refreshRecovery = React.useCallback((userId: string) => {
+    try {
+      const entries = draftJournal.list(userId);
+      if (account.current === userId) { setRecoveryEntries(entries); setRecoveryError(''); }
+    } catch {
+      if (account.current === userId) setRecoveryError('Local draft storage cannot be read on this device. Keep this page open and copy your changes before leaving.');
+    }
+  }, []);
   const applyUser = React.useCallback((next: User | null) => {
     if (account.current !== (next?.id || null)) {
       sessionVersion.current++;
@@ -63,11 +77,13 @@ function App() {
       openVersion.current++;
       account.current = next?.id || null;
       setTalks([]); setRecentNames([]); setCurrentTalk(null);
+      setServerLoaded(false); setRecoveryEntries([]); setRecoveryError(''); baseVersion.current = null;
       setCurrentView('dashboard'); setSubmitStatus(''); setDataError(''); setActionError('');
+      if (next) refreshRecovery(next.id);
     }
     setUser(next);
     setIsAuthenticated(!!next);
-  }, []);
+  }, [refreshRecovery]);
 
   const loadData = React.useCallback(async (userId: string) => {
     const requestVersion = ++loadVersion.current;
@@ -82,13 +98,27 @@ function App() {
       if (!current()) return;
       setDataError('');
       setTalks(fetchedTalks);
+      setServerLoaded(true);
       setRecentNames(fetchedNames);
+      let cleanupFailed = false;
+      try {
+        for (const entry of draftJournal.list(userId)) {
+          const server = fetchedTalks.find(talk => talk.id === entry.talk.id) || null;
+          if (recoveryState(entry, server) === 'synced' || (entry.state === 'pending-delivery' && server?.submittedAt)) {
+            draftJournal.remove(userId, entry.talk.id);
+          }
+        }
+      } catch { cleanupFailed = true; }
+      refreshRecovery(userId);
+      if (cleanupFailed) setRecoveryError('Local recovery status could not be updated on this device.');
     } catch (err) {
       if (!current()) return;
       console.error('Failed to load data:', err);
+      setServerLoaded(false);
       setDataError('Your records could not be loaded. Please retry.');
+      refreshRecovery(userId);
     } finally { if (current()) setDataLoading(false); }
-  }, []);
+  }, [refreshRecovery]);
 
   const removeRecentName = async (name: string) => {
     if (!user) return;
@@ -138,6 +168,12 @@ function App() {
     if (isAuthenticated && user) {
       loadData(user.id);
     }
+  }, [isAuthenticated, user, loadData]);
+  React.useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const reconnect = () => { void loadData(user.id); };
+    window.addEventListener('online', reconnect);
+    return () => window.removeEventListener('online', reconnect);
   }, [isAuthenticated, user, loadData]);
 
   const handleLogin = (loggedInUser: User) => {
@@ -193,6 +229,7 @@ function App() {
     }
 
     setCurrentTalk(newTalk);
+    baseVersion.current = null;
     setCurrentView('edit');
   };
 
@@ -201,9 +238,14 @@ function App() {
     const request = ++openVersion.current;
     setActionError('');
     try {
-      const talk = await storage.getTalk(talkId);
+      const talk = await storage.getTalk(talkId, user?.id);
       if (session !== sessionVersion.current || request !== openVersion.current) return;
       if (!talk) { setActionError('This record is no longer available. Reload your records.'); return; }
+      if (isUnsignedDraft(talk) && recoveryEntries.some(entry => entry.talk.id === talk.id && entry.state !== 'draft')) {
+        setActionError('This local record was signed or delivery may be pending. Check the recovery notice first.');
+        return;
+      }
+      baseVersion.current = talkVersion(talk);
       setCurrentTalk(talk);
       setCurrentView('edit');
     } catch {
@@ -223,11 +265,32 @@ function App() {
     }
   };
 
+  const saveLocalSnapshot = React.useCallback((talk: ToolboxTalk, editorUserId: string): string | null => {
+    const userId = account.current;
+    if (!userId || userId !== editorUserId) return 'Your account changed. Reopen the draft before editing.';
+    try {
+      draftJournal.save(userId, talk, baseVersion.current);
+      refreshRecovery(userId);
+      return null;
+    } catch {
+      return 'This edit could not be saved on this device. Keep this page open and copy your changes before leaving.';
+    }
+  }, [refreshRecovery]);
+
   const saveTalk = async (talk: ToolboxTalk): Promise<ToolboxTalk> => {
     if (!user) throw new Error('Please sign in again before saving.');
     const session = sessionVersion.current;
+    const server = talk.id.startsWith('talk_') ? null : await storage.getTalk(talk.id, user.id);
+    assertCurrentServer(talk, baseVersion.current, server);
+    if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
     const saved = await storage.saveTalk(talk, user.id);
     if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
+    baseVersion.current = talkVersion(saved);
+    try {
+      draftJournal.remove(user.id, talk.id);
+      if (talk.id !== saved.id) draftJournal.remove(user.id, saved.id);
+      refreshRecovery(user.id);
+    } catch { setRecoveryError('Saved to your account, but the device could not clear its local recovery copy.'); }
     setTalks(current => mergeSavedTalk(current, saved, talk.id));
     void rememberAttendees(talk, user.id);
     return saved;
@@ -242,8 +305,13 @@ function App() {
     logger.startTimer(`submit_${talk.id}`);
 
     try {
-      const saved = await api.submitTalk(talk);
+      const server = await storage.getTalk(talk.id, user.id);
+      assertCurrentDelivery(talk, baseVersion.current, server);
       if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
+      const saved = server?.submittedAt ? server : await api.submitTalk(talk);
+      if (session !== sessionVersion.current) throw new Error('Your session changed. Reopen the record after signing in.');
+      try { draftJournal.remove(user.id, talk.id); refreshRecovery(user.id); }
+      catch { setRecoveryError('The record was sent, but the device could not clear its local delivery notice.'); }
       void rememberAttendees(talk, user.id);
       const latencyMs = logger.getElapsedTime(`submit_${talk.id}`);
       logger.logEvent(user.id, saved.id, 'send_success', { latency_ms: latencyMs });
@@ -265,6 +333,49 @@ function App() {
       setTimeout(() => { if (session === sessionVersion.current) setSubmitStatus(''); }, 3000);
       throw error;
     }
+  };
+
+  const recoverDraft = (entry: RecoveryEntry) => {
+    if (!user || entry.accountId !== user.id || entry.state !== 'draft' || !isUnsignedDraft(entry.talk)) return;
+    const server = serverLoaded ? talks.find(talk => talk.id === entry.talk.id) || null : undefined;
+    if (!['ready', 'offline'].includes(recoveryState(entry, server))) return;
+    baseVersion.current = entry.baseVersion;
+    setCurrentTalk(entry.talk);
+    setCurrentView('edit');
+    setActionError('');
+  };
+
+  const copyConflict = (entry: RecoveryEntry) => {
+    if (!user || entry.accountId !== user.id || entry.state !== 'draft' || !isUnsignedDraft(entry.talk)) return;
+    const server = serverLoaded ? talks.find(talk => talk.id === entry.talk.id) || null : undefined;
+    if (recoveryState(entry, server) !== 'conflict') return;
+    const copy = { ...entry.talk, id: `talk_${crypto.randomUUID()}`, createdAt: Date.now() };
+    try {
+      draftJournal.save(user.id, copy, null);
+      draftJournal.remove(user.id, entry.talk.id);
+      refreshRecovery(user.id);
+      baseVersion.current = null;
+      setCurrentTalk(copy);
+      setCurrentView('edit');
+      setActionError('');
+    } catch { setRecoveryError('The recovery copy could not be written. Keep this page open and retry.'); }
+  };
+
+  const checkDelivery = (entry: RecoveryEntry) => {
+    if (!user || entry.accountId !== user.id || entry.state !== 'pending-delivery' || !serverLoaded) return;
+    const server = talks.find(talk => talk.id === entry.talk.id) || null;
+    try { assertCurrentDelivery(entry.talk, entry.baseVersion, server); }
+    catch { setActionError('The account record changed. Reload records before checking delivery.'); return; }
+    baseVersion.current = entry.baseVersion;
+    setCurrentTalk(entry.talk);
+    setCurrentView('edit');
+    setActionError('');
+  };
+
+  const discardRecovery = (entry: RecoveryEntry) => {
+    if (!user || entry.accountId !== user.id) return;
+    try { draftJournal.remove(user.id, entry.talk.id); refreshRecovery(user.id); }
+    catch { setRecoveryError('The local copy could not be removed. Please retry.'); }
   };
 
   const goToDashboard = () => {
@@ -344,9 +455,19 @@ function App() {
       {dataError && <div role="alert" className="mx-auto max-w-[760px] p-5 text-stop-text">
         {dataError} <button className="min-h-11 underline" onClick={() => user && void loadData(user.id)}>Retry loading records</button>
       </div>}
+      {currentView === 'dashboard' && <DraftRecoveryPanel
+        entries={recoveryEntries}
+        talks={talks}
+        serverLoaded={serverLoaded}
+        error={recoveryError}
+        onRecover={recoverDraft}
+        onCopy={copyConflict}
+        onDiscard={discardRecovery}
+        onCheckDelivery={checkDelivery}
+      />}
       {currentView === 'dashboard' && !dataError && !dataLoading && (
         <Dashboard
-          talks={talks}
+          talks={talks.filter(talk => !recoveryEntries.some(entry => entry.talk.id === talk.id && entry.state === 'draft' && recoveryState(entry, talk) === 'ready'))}
           onShowRecords={showOutbox}
           onNewTalk={createNewTalk}
           onEditTalk={editTalk}
@@ -379,6 +500,7 @@ function App() {
           talk={currentTalk}
           onSave={saveTalk}
           onSubmit={submitTalk}
+          onLocalChange={saveLocalSnapshot}
           recentNames={recentNames}
           currentUser={user}
           onRemoveRecentName={removeRecentName}
