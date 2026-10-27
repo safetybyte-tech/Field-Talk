@@ -24,8 +24,8 @@
     before_send: function (event) {
       if (!event || (event.event !== '$pageview' && event.event !== '$pageleave')) return null;
       var props = event.properties || {};
-      // Allow only anonymous technical metrics; never forward arbitrary SDK,
-      // person, campaign, URL, or application properties.
+      // Allow only anonymous technical metrics and bounded campaign labels;
+      // never forward arbitrary SDK, person, URL, or application properties.
       var allowed = ['token', 'distinct_id', '$device_id', '$session_id', '$window_id',
         '$lib', '$lib_version', '$browser', '$browser_version', '$os', '$os_version',
         '$device_type', '$screen_height', '$screen_width', '$viewport_height',
@@ -39,7 +39,17 @@
       props.$geoip_disable = true;
       props.$current_url = location.origin + location.pathname;
       props.$pathname = location.pathname;
-      try { props.$referrer = document.referrer ? new URL(document.referrer).origin : ''; } catch (_) { props.$referrer = ''; }
+      // Referrers keep only their origin; Web Analytics source reports read the host.
+      var referrer = null;
+      try { referrer = document.referrer ? new URL(document.referrer) : null; } catch (_) { referrer = null; }
+      props.$referrer = referrer ? referrer.origin : '$direct';
+      props.$referring_domain = referrer ? referrer.hostname : '$direct';
+      // UTM values are bounded slugs only. Full query strings and free text are discarded.
+      var campaign = new URLSearchParams(location.search);
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(function (key) {
+        var value = campaign.get(key);
+        if (value && /^[a-zA-Z0-9_-]{1,80}$/.test(value)) props[key] = value;
+      });
       props.tool_name = "Field Talk";
       props.tool_slug = "field-talk";
       event.properties = props;
